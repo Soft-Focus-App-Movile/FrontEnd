@@ -1,8 +1,13 @@
 package com.softfocus.features.auth.presentation.register
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,15 +16,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -29,11 +42,12 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +55,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -54,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import com.softfocus.R
 import com.softfocus.core.ui.theme.SoftFocusTheme
 import com.softfocus.features.auth.domain.models.UserType
+import com.softfocus.features.auth.domain.models.PsychologySpecialty
 import com.softfocus.features.auth.presentation.di.PresentationModule
 import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Gray828
@@ -63,24 +79,23 @@ import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.SourceSansRegular
 import com.softfocus.ui.theme.SourceSansBold
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RegisterScreen(
     viewModel: RegisterViewModel,
-    onRegisterSuccess: () -> Unit,
+    onRegisterSuccess: (UserType) -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
     val confirmPassword by viewModel.confirmPassword.collectAsState()
     val userType by viewModel.userType.collectAsState()
-    val user by viewModel.user.collectAsState()
+    val registrationResult by viewModel.registrationResult.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
     var acceptedTerms by remember { mutableStateOf(false) }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isConfirmPasswordVisible by remember { mutableStateOf(false) }
@@ -89,14 +104,58 @@ fun RegisterScreen(
     var licenseNumber by remember { mutableStateOf("") }
     var yearsOfExperience by remember { mutableStateOf("") }
     var region by remember { mutableStateOf("") }
+    var selectedSpecialties by remember { mutableStateOf(setOf<String>()) }
     var specialtiesExpanded by remember { mutableStateOf(false) }
-    var selectedSpecialties by remember { mutableStateOf("") }
     var university by remember { mutableStateOf("") }
     var graduationYear by remember { mutableStateOf("") }
 
+    // Documentos
+    var licenseFile by remember { mutableStateOf<String?>(null) }
+    var diplomaFile by remember { mutableStateOf<String?>(null) }
+    var dniFile by remember { mutableStateOf<String?>(null) }
+    var certificationsFile by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+
+    // Launchers para seleccionar archivos
+    val licenseLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            licenseFile = it.toString()
+        }
+    }
+
+    val diplomaLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            diplomaFile = it.toString()
+        }
+    }
+
+    val dniLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            dniFile = it.toString()
+        }
+    }
+
+    val certificationsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            certificationsFile = it.toString()
+        }
+    }
+
     // Navigate on success
-    user?.let {
-        onRegisterSuccess()
+    registrationResult?.let {
+        userType?.let { type ->
+            onRegisterSuccess(type)
+            viewModel.clearRegistrationResult()
+        }
     }
 
     Column(
@@ -316,60 +375,58 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // User Type Dropdown
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { if (!isLoading) expanded = it }
+        // User Type Checkboxes
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            OutlinedTextField(
-                value = when (userType) {
-                    UserType.GENERAL -> "Usuario General"
-                    UserType.PATIENT -> "Paciente"
-                    UserType.PSYCHOLOGIST -> "Psicólogo"
-                    UserType.ADMIN -> "Administrador"
-                    null -> ""
-                },
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Green37,
-                    unfocusedIndicatorColor = GrayE0
-                ),
-                placeholder = {
-                    Text(
-                        text = "Tipo de usuario",
-                        style = SourceSansRegular,
-                        color = Gray828
-                    )
-                },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                singleLine = true
+            Text(
+                text = "Tipo de usuario",
+                style = SourceSansRegular,
+                fontSize = 16.sp,
+                color = Gray828,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                DropdownMenuItem(
-                    text = { Text("Usuario General") },
-                    onClick = {
-                        viewModel.updateUserType(UserType.GENERAL)
-                        expanded = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Psicólogo") },
-                    onClick = {
-                        viewModel.updateUserType(UserType.PSYCHOLOGIST)
-                        expanded = false
-                    }
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = userType == UserType.GENERAL,
+                        onCheckedChange = {
+                            if (it) viewModel.updateUserType(UserType.GENERAL)
+                        },
+                        enabled = !isLoading
+                    )
+                    Text(
+                        text = "Usuario General",
+                        style = SourceSansRegular,
+                        fontSize = 14.sp,
+                        color = Gray828
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = userType == UserType.PSYCHOLOGIST,
+                        onCheckedChange = {
+                            if (it) viewModel.updateUserType(UserType.PSYCHOLOGIST)
+                        },
+                        enabled = !isLoading
+                    )
+                    Text(
+                        text = "Psicólogo",
+                        style = SourceSansRegular,
+                        fontSize = 14.sp,
+                        color = Gray828
+                    )
+                }
             }
         }
 
@@ -454,61 +511,138 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Especialidades (Dropdown)
-            ExposedDropdownMenuBox(
-                expanded = specialtiesExpanded,
-                onExpandedChange = { specialtiesExpanded = !specialtiesExpanded && !isLoading }
-            ) {
-                OutlinedTextField(
-                    value = selectedSpecialties.ifEmpty { "" },
-                    onValueChange = {},
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Green37,
-                        unfocusedIndicatorColor = GrayE0
-                    ),
-                    placeholder = {
+            // Especialidades (Card clickeable con Dialog)
+            val specialtiesList = PsychologySpecialty.getAllDisplayNames()
+
+            OutlinedTextField(
+                value = if (selectedSpecialties.isEmpty()) "" else "${selectedSpecialties.size} seleccionada(s)",
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isLoading) { specialtiesExpanded = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Green37,
+                    unfocusedIndicatorColor = GrayE0,
+                    disabledIndicatorColor = GrayE0,
+                    disabledContainerColor = Color.Transparent
+                ),
+                placeholder = {
+                    Text(
+                        text = "Selecciona especialidades",
+                        style = SourceSansRegular,
+                        color = Gray828
+                    )
+                },
+                enabled = false
+            )
+
+            // Dialog para seleccionar especialidades
+            if (specialtiesExpanded) {
+                AlertDialog(
+                    onDismissRequest = { specialtiesExpanded = false },
+                    title = {
                         Text(
-                            text = "Especialidades",
-                            style = SourceSansRegular,
-                            color = Gray828
+                            text = "Selecciona tus especialidades",
+                            style = SourceSansBold,
+                            fontSize = 18.sp
                         )
                     },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = specialtiesExpanded) },
-                    enabled = !isLoading
+                    text = {
+                        LazyColumn(
+                            modifier = Modifier.height(400.dp)
+                        ) {
+                            items(specialtiesList) { specialty ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedSpecialties = if (selectedSpecialties.contains(specialty)) {
+                                                selectedSpecialties - specialty
+                                            } else {
+                                                selectedSpecialties + specialty
+                                            }
+                                        }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = selectedSpecialties.contains(specialty),
+                                        onCheckedChange = { isChecked ->
+                                            selectedSpecialties = if (isChecked) {
+                                                selectedSpecialties + specialty
+                                            } else {
+                                                selectedSpecialties - specialty
+                                            }
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = specialty,
+                                        style = SourceSansRegular,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { specialtiesExpanded = false }) {
+                            Text(
+                                text = "Listo",
+                                style = SourceSansBold,
+                                color = Green49
+                            )
+                        }
+                    }
                 )
+            }
 
-                ExposedDropdownMenu(
-                    expanded = specialtiesExpanded,
-                    onDismissRequest = { specialtiesExpanded = false }
+            // Chips de especialidades seleccionadas
+            if (selectedSpecialties.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Clínica") },
-                        onClick = {
-                            selectedSpecialties = "Clínica"
-                            specialtiesExpanded = false
+                    selectedSpecialties.forEach { specialty ->
+                        Row(
+                            modifier = Modifier
+                                .border(
+                                    width = 1.dp,
+                                    color = Green37,
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .background(
+                                    color = Green49.copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = specialty,
+                                style = SourceSansRegular,
+                                fontSize = 13.sp,
+                                color = Gray828
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Eliminar $specialty",
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .clickable(enabled = !isLoading) {
+                                        selectedSpecialties = selectedSpecialties - specialty
+                                    },
+                                tint = Gray828
+                            )
                         }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Educativa") },
-                        onClick = {
-                            selectedSpecialties = "Educativa"
-                            specialtiesExpanded = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Organizacional") },
-                        onClick = {
-                            selectedSpecialties = "Organizacional"
-                            specialtiesExpanded = false
-                        }
-                    )
+                    }
                 }
             }
 
@@ -566,18 +700,237 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // TODO: Aquí irían los botones para subir documentos (Licencia, Diploma, DNI, Certificaciones)
+            // Documentos
             Text(
-                text = "Documentos (pendiente de implementar)",
-                style = SourceSansRegular,
+                text = "Documentos",
+                style = SourceSansBold,
+                fontSize = 16.sp,
                 color = Gray828,
-                fontSize = 12.sp
+                modifier = Modifier.padding(bottom = 12.dp)
             )
+
+            // Grid 2x2 para los documentos
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Primera fila: Licencia y Diploma
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Licencia
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(120.dp)
+                            .clickable(enabled = !isLoading) {
+                                licenseLauncher.launch("application/pdf")
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (licenseFile != null) Green49.copy(alpha = 0.1f) else GrayE0.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (licenseFile != null) Icons.Filled.Description else Icons.Outlined.Description,
+                                contentDescription = "Licencia",
+                                modifier = Modifier.size(40.dp),
+                                tint = if (licenseFile != null) Green49 else Gray828
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Licencia",
+                                style = SourceSansRegular,
+                                fontSize = 13.sp,
+                                color = Gray828,
+                                textAlign = TextAlign.Center
+                            )
+                            if (licenseFile != null) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Eliminar",
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clickable(enabled = !isLoading) {
+                                            licenseFile = null
+                                        },
+                                    tint = Gray828
+                                )
+                            }
+                        }
+                    }
+
+                    // Diploma
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(120.dp)
+                            .clickable(enabled = !isLoading) {
+                                diplomaLauncher.launch("application/pdf")
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (diplomaFile != null) Green49.copy(alpha = 0.1f) else GrayE0.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (diplomaFile != null) Icons.Filled.Description else Icons.Outlined.Description,
+                                contentDescription = "Diploma",
+                                modifier = Modifier.size(40.dp),
+                                tint = if (diplomaFile != null) Green49 else Gray828
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Diploma",
+                                style = SourceSansRegular,
+                                fontSize = 13.sp,
+                                color = Gray828,
+                                textAlign = TextAlign.Center
+                            )
+                            if (diplomaFile != null) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Eliminar",
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clickable(enabled = !isLoading) {
+                                            diplomaFile = null
+                                        },
+                                    tint = Gray828
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Segunda fila: DNI y Certificaciones
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // DNI
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(120.dp)
+                            .clickable(enabled = !isLoading) {
+                                dniLauncher.launch("*/*")
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (dniFile != null) Green49.copy(alpha = 0.1f) else GrayE0.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (dniFile != null) Icons.Filled.Description else Icons.Outlined.Description,
+                                contentDescription = "DNI",
+                                modifier = Modifier.size(40.dp),
+                                tint = if (dniFile != null) Green49 else Gray828
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "DNI",
+                                style = SourceSansRegular,
+                                fontSize = 13.sp,
+                                color = Gray828,
+                                textAlign = TextAlign.Center
+                            )
+                            if (dniFile != null) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Eliminar",
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clickable(enabled = !isLoading) {
+                                            dniFile = null
+                                        },
+                                    tint = Gray828
+                                )
+                            }
+                        }
+                    }
+
+                    // Certificaciones
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(120.dp)
+                            .clickable(enabled = !isLoading) {
+                                certificationsLauncher.launch("application/pdf")
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (certificationsFile != null) Green49.copy(alpha = 0.1f) else GrayE0.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (certificationsFile != null) Icons.Filled.Description else Icons.Outlined.Description,
+                                contentDescription = "Certificaciones",
+                                modifier = Modifier.size(40.dp),
+                                tint = if (certificationsFile != null) Green49 else Gray828
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Certificaciones",
+                                style = SourceSansRegular,
+                                fontSize = 13.sp,
+                                color = Gray828,
+                                textAlign = TextAlign.Center
+                            )
+                            if (certificationsFile != null) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Eliminar",
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clickable(enabled = !isLoading) {
+                                            certificationsFile = null
+                                        },
+                                    tint = Gray828
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Terms checkbox
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -601,8 +954,34 @@ fun RegisterScreen(
         // Register button
         Button(
             onClick = {
-                val fullName = "$firstName $lastName".trim()
-                viewModel.register(fullName)
+                if (userType == UserType.GENERAL) {
+                    // Register general user
+                    viewModel.registerGeneralUser(
+                        firstName = firstName,
+                        lastName = lastName,
+                        acceptsPrivacyPolicy = acceptedTerms
+                    )
+                } else if (userType == UserType.PSYCHOLOGIST) {
+                    // Register psychologist
+                    val specialtiesString = selectedSpecialties.joinToString(",")
+                    val certList = if (certificationsFile != null) listOf(certificationsFile!!) else null
+
+                    viewModel.registerPsychologist(
+                        firstName = firstName,
+                        lastName = lastName,
+                        professionalLicense = licenseNumber,
+                        yearsOfExperience = yearsOfExperience.toIntOrNull() ?: 0,
+                        collegiateRegion = region,
+                        university = university,
+                        graduationYear = graduationYear.toIntOrNull() ?: 2020,
+                        acceptsPrivacyPolicy = acceptedTerms,
+                        licenseDocumentUri = licenseFile ?: "",
+                        diplomaDocumentUri = diplomaFile ?: "",
+                        dniDocumentUri = dniFile ?: "",
+                        specialties = if (specialtiesString.isNotEmpty()) specialtiesString else null,
+                        certificationDocumentUris = certList
+                    )
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
@@ -667,11 +1046,12 @@ fun RegisterScreen(
 @Preview(showBackground = true)
 @Composable
 fun RegisterScreenPreview() {
-    val viewModel = PresentationModule.getRegisterViewModel()
+    val context = LocalContext.current
+    val viewModel = PresentationModule.getRegisterViewModel(context)
     SoftFocusTheme {
         RegisterScreen(
             viewModel = viewModel,
-            onRegisterSuccess = {},
+            onRegisterSuccess = { _ -> },
             onNavigateToLogin = {}
         )
     }

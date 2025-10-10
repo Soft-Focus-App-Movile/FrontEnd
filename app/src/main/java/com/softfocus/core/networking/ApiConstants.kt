@@ -1,7 +1,8 @@
 package com.softfocus.core.networking
 
 object ApiConstants {
-    const val BASE_URL = "http://localhost:5007/api/v1/"
+    // 10.0.2.2 is the special IP for Android emulator to access host machine's localhost
+    const val BASE_URL = "http://10.0.2.2:5007/api/v1/"
 
     // Auth endpoints
     object Auth {

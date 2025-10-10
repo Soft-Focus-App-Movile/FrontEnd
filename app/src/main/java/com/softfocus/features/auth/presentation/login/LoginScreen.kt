@@ -295,7 +295,8 @@ fun LoginScreen(
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    val viewModel = getLoginViewModel()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val viewModel = getLoginViewModel(context)
     SoftFocusTheme {
         LoginScreen(
             viewModel = viewModel,
