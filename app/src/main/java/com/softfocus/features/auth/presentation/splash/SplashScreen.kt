@@ -15,7 +15,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.softfocus.R
-import com.softfocus.core.ui.theme.SoftFocusTheme
+import com.softfocus.ui.theme.SoftFocusMobileTheme
 import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.GreenC1
 import kotlinx.coroutines.delay
@@ -62,7 +62,7 @@ fun SplashScreen(
 @Preview(showBackground = true)
 @Composable
 fun SplashScreenPreview() {
-    SoftFocusTheme {
+    SoftFocusMobileTheme {
         SplashScreen(
             onNavigateToLogin = {},
             onNavigateToHome = {}

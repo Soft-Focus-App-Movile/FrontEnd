@@ -26,11 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.softfocus.core.data.local.UserSession
-import com.softfocus.core.ui.components.navigation.GeneralBottomNav
-import com.softfocus.core.ui.components.navigation.PatientBottomNav
-import com.softfocus.core.ui.components.navigation.PsychologistBottomNav
+import com.softfocus.ui.components.navigation.GeneralBottomNav
+import com.softfocus.ui.components.navigation.PatientBottomNav
+import com.softfocus.ui.components.navigation.PsychologistBottomNav
 import com.softfocus.features.auth.domain.models.UserType
-import com.softfocus.features.home.presentation.HomeScreen
 import com.softfocus.features.home.presentation.general.GeneralHomeScreen
 import com.softfocus.features.home.presentation.patient.PatientHomeScreen
 import com.softfocus.features.home.presentation.psychologist.PsychologistHomeScreen

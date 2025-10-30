@@ -7,12 +7,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.ui.res.painterResource
+import com.softfocus.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.softfocus.core.data.local.UserSession
+import com.softfocus.core.utils.LocationHelper
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -32,6 +41,30 @@ fun PsychologistHomeScreen(viewModel: PsychologistHomeViewModel) {
     val invitationCode = viewModel.invitationCode.collectAsState()
     val isLoading = viewModel.isLoading.collectAsState()
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var locationText by remember { mutableStateOf("Lima, Peru") }
+
+    // Obtener información del usuario
+    val userSession = remember { UserSession(context) }
+    val currentUser = remember { userSession.getUser() }
+    val userName = remember {
+        currentUser?.fullName?.split(" ")?.firstOrNull() ?: "Usuario"
+    }
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            if (LocationHelper.hasLocationPermission(context)) {
+                val location = LocationHelper.getCurrentLocation(context)
+                locationText = if (location != null) {
+                    LocationHelper.getCityAndCountry(context, location)
+                } else {
+                    "Lima, Peru"
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -41,14 +74,14 @@ fun PsychologistHomeScreen(viewModel: PsychologistHomeViewModel) {
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Place,
+                            painter = painterResource(id = R.drawable.ic_location_pin),
                             contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(16.dp)
+                            tint = Color(0xFF497654),
+                            modifier = Modifier.size(23.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Lima, Peru",
+                            text = locationText,
                             style = SourceSansRegular,
                             fontSize = 14.sp,
                             color = Color.Gray
@@ -58,9 +91,10 @@ fun PsychologistHomeScreen(viewModel: PsychologistHomeViewModel) {
                 actions = {
                     IconButton(onClick = { }) {
                         Icon(
-                            imageVector = Icons.Default.Notifications,
+                            painter = painterResource(id = R.drawable.ic_notification_bell),
                             contentDescription = "Notificaciones",
-                            tint = Color.Gray
+                            tint = Color(0xFF497654),
+                            modifier = Modifier.size(25.dp)
                         )
                     }
                 },
@@ -90,7 +124,7 @@ fun PsychologistHomeScreen(viewModel: PsychologistHomeViewModel) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Hola Dra Sanchez ,",
+                    text = "Hola $userName ,",
                     style = CrimsonSemiBold,
                     fontSize = 24.sp,
                     color = Gray828,

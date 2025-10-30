@@ -13,7 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.softfocus.core.ui.theme.SoftFocusTheme
+import com.softfocus.ui.theme.SoftFocusMobileTheme
 import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Gray828
 import com.softfocus.ui.theme.SourceSansRegular
@@ -49,7 +49,7 @@ fun HomeScreen() {
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    SoftFocusTheme {
+    SoftFocusMobileTheme {
         HomeScreen()
     }
 }

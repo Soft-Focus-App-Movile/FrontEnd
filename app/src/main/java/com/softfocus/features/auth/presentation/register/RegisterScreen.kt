@@ -71,7 +71,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softfocus.R
-import com.softfocus.core.ui.theme.SoftFocusTheme
+import com.softfocus.ui.theme.SoftFocusMobileTheme
 import com.softfocus.features.auth.domain.models.UserType
 import com.softfocus.features.auth.domain.models.PsychologySpecialty
 import com.softfocus.features.auth.domain.models.User
@@ -1194,7 +1194,7 @@ fun RegisterScreen(
 fun RegisterScreenPreview() {
     val context = LocalContext.current
     val viewModel = PresentationModule.getRegisterViewModel(context)
-    SoftFocusTheme {
+    SoftFocusMobileTheme {
         RegisterScreen(
             viewModel = viewModel,
             oauthEmail = null,

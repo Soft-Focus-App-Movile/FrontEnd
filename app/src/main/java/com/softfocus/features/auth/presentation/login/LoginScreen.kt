@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softfocus.R
 import com.softfocus.core.networking.ApiConstants
-import com.softfocus.core.ui.theme.SoftFocusTheme
+import com.softfocus.ui.theme.SoftFocusMobileTheme
 import com.softfocus.features.auth.presentation.di.PresentationModule.getLoginViewModel
 import com.softfocus.ui.theme.Black
 import com.softfocus.ui.theme.CrimsonSemiBold
@@ -139,7 +139,7 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Top
     ) {
 
-        Spacer(modifier = Modifier.height(5.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = "Iniciar Sesión",
@@ -147,7 +147,7 @@ fun LoginScreen(
             fontSize = 40.sp,
             color = Green49,
             modifier = Modifier
-                .padding( 10.dp)
+                .padding( 11.dp)
                 .align(Alignment.Start)
         )
 
@@ -352,7 +352,7 @@ fun LoginScreen(
 fun LoginScreenPreview() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val viewModel = getLoginViewModel(context)
-    SoftFocusTheme {
+    SoftFocusMobileTheme {
         LoginScreen(
             viewModel = viewModel,
             onLoginSuccess = {},

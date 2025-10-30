@@ -20,7 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softfocus.R
-import com.softfocus.core.ui.theme.SoftFocusTheme
+import com.softfocus.ui.theme.SoftFocusMobileTheme
 import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.GreenC1
@@ -66,7 +66,7 @@ fun AccountReviewScreen() {
 @Preview(showBackground = true)
 @Composable
 fun AccountReviewScreenPreview() {
-    SoftFocusTheme {
+    SoftFocusMobileTheme {
         AccountReviewScreen()
     }
 }

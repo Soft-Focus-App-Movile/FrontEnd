@@ -9,15 +9,25 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.res.painterResource
+import com.softfocus.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import com.softfocus.core.data.local.UserSession
+import com.softfocus.core.utils.LocationHelper
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +40,30 @@ import com.softfocus.ui.theme.SourceSansRegular
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PatientHomeScreen() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var locationText by remember { mutableStateOf("Lima, Peru") }
+
+    // Obtener información del usuario
+    val userSession = remember { UserSession(context) }
+    val currentUser = remember { userSession.getUser() }
+    val userName = remember {
+        currentUser?.fullName?.split(" ")?.firstOrNull() ?: "Usuario"
+    }
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            if (LocationHelper.hasLocationPermission(context)) {
+                val location = LocationHelper.getCurrentLocation(context)
+                locationText = if (location != null) {
+                    LocationHelper.getCityAndCountry(context, location)
+                } else {
+                    "Lima, Peru"
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -39,14 +73,14 @@ fun PatientHomeScreen() {
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Place,
+                            painter = painterResource(id = R.drawable.ic_location_pin),
                             contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(16.dp)
+                            tint = Color(0xFF497654),
+                            modifier = Modifier.size(23.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Lima, Peru",
+                            text = locationText,
                             style = SourceSansRegular,
                             fontSize = 14.sp,
                             color = Color.Gray
@@ -72,24 +106,11 @@ fun PatientHomeScreen() {
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = { }) {
                         Icon(
-                            imageVector = Icons.Default.Notifications,
+                            painter = painterResource(id = R.drawable.ic_notification_bell),
                             contentDescription = "Notificaciones",
-                            tint = Color.Gray
+                            tint = Color(0xFF497654),
+                            modifier = Modifier.size(25.dp)
                         )
-                    }
-                    IconButton(onClick = { }) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF6B8E6F),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu",
-                                tint = Color.White,
-                                modifier = Modifier.padding(8.dp)
-                            )
-                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -107,7 +128,7 @@ fun PatientHomeScreen() {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
+            TextField(
                 value = "",
                 onValueChange = {},
                 placeholder = {
@@ -120,25 +141,29 @@ fun PatientHomeScreen() {
                 },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Search,
+                        painter = painterResource(id = R.drawable.ic_search),
                         contentDescription = null,
-                        tint = Color.Gray
+                        tint = Color.Unspecified
                     )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .shadow(4.dp, RoundedCornerShape(8.dp)),
                 shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = Color(0xFF6B8E6F)
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
                 )
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Hola Laura ,",
+                text = "Hola $userName ,",
                 style = CrimsonSemiBold,
                 fontSize = 24.sp,
                 color = Gray828,
