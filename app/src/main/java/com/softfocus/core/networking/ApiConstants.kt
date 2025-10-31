@@ -32,8 +32,12 @@ object ApiConstants {
     object AI {
         const val CHAT_MESSAGE = "ai/chat/message"
         const val CHAT_USAGE = "ai/chat/usage"
+        const val CHAT_SESSIONS = "ai/chat/sessions"
+        const val CHAT_SESSION_MESSAGES = "ai/chat/sessions/{sessionId}/messages"
         const val EMOTION_ANALYZE = "ai/emotion/analyze"
         const val EMOTION_USAGE = "ai/emotion/usage"
+
+        fun getChatSessionMessages(sessionId: String) = CHAT_SESSION_MESSAGES.replace("{sessionId}", sessionId)
     }
 
     object Notifications {

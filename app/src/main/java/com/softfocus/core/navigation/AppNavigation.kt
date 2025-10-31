@@ -40,6 +40,8 @@ import com.softfocus.features.psychologist.presentation.di.PsychologistPresentat
 import com.softfocus.features.notifications.presentation.di.NotificationPresentationModule
 import com.softfocus.features.notifications.presentation.list.NotificationsScreen
 import com.softfocus.features.notifications.presentation.preferences.NotificationPreferencesScreen
+import com.softfocus.features.ai.presentation.welcome.AIWelcomeScreen
+import com.softfocus.features.ai.presentation.chat.AIChatScreen
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -256,7 +258,7 @@ fun AppNavigation() {
                                 modifier = Modifier.padding(paddingValues)
                             ) {
                                 if (isPatient.value) {
-                                    PatientHomeScreen()
+                                    PatientHomeScreen(navController)
                                 } else {
                                     GeneralHomeScreen()
                                 }
@@ -405,6 +407,45 @@ fun AppNavigation() {
                 userId = userId,
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Route.AIWelcome.path) {
+            AIWelcomeScreen(
+                onSendMessage = { message ->
+                    navController.navigate(Route.AIChat.createRoute(message))
+                },
+                onClose = { navController.popBackStack() },
+                onSessionClick = { sessionId ->
+                    navController.navigate(Route.AIChat.createRoute(sessionId = sessionId))
+                }
+            )
+        }
+
+        composable(
+            route = Route.AIChat.path,
+            arguments = listOf(
+                navArgument("initialMessage") {
+                    type = NavType.StringType
+                    nullable = true
+                },
+                navArgument("sessionId") {
+                    type = NavType.StringType
+                    nullable = true
+                }
+            )
+        ) { backStackEntry ->
+            val initialMessage = backStackEntry.arguments?.getString("initialMessage")
+            val sessionId = backStackEntry.arguments?.getString("sessionId")
+
+            val decodedMessage = if (initialMessage != null && initialMessage != "null") {
+                URLDecoder.decode(initialMessage, StandardCharsets.UTF_8.toString())
+            } else null
+
+            AIChatScreen(
+                initialMessage = decodedMessage,
+                sessionId = if (sessionId != "null") sessionId else null,
+                onBackClick = { navController.popBackStack() }
             )
         }
     }

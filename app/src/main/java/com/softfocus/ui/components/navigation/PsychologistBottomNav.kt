@@ -1,6 +1,13 @@
 package com.softfocus.ui.components.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Announcement
@@ -34,6 +41,26 @@ import com.softfocus.ui.theme.Green29
 import com.softfocus.ui.theme.SourceSansRegular
 
 @Composable
+private fun BottomNavIcon(
+    isSelected: Boolean,
+    content: @Composable () -> Unit
+) {
+    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+        content()
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .width(10.dp)
+                .height(5.dp)
+                .background(
+                    if (isSelected) Green29 else Color.Transparent,
+                    RoundedCornerShape(3.dp)
+                )
+        )
+    }
+}
+
+@Composable
 fun PsychologistBottomNav(navController: NavController) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     var selectedTab by remember { mutableStateOf("home") }
@@ -44,16 +71,18 @@ fun PsychologistBottomNav(navController: NavController) {
     ) {
         NavigationBarItem(
             icon = {
-                Icon(
-                    painter = painterResource(
-                        id = if (currentRoute == Route.Home.path || selectedTab == "home")
-                            R.drawable.ic_home_rounded_filled
-                        else
-                            R.drawable.ic_home_rounded_outlined
-                    ),
-                    contentDescription = "Inicio",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = currentRoute == Route.Home.path || selectedTab == "home") {
+                    Icon(
+                        painter = painterResource(
+                            id = if (currentRoute == Route.Home.path || selectedTab == "home")
+                                R.drawable.ic_home_rounded_filled
+                            else
+                                R.drawable.ic_home_rounded_outlined
+                        ),
+                        contentDescription = "Inicio",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Inicio", fontSize = 12.sp, style = SourceSansRegular) },
             selected = currentRoute == Route.Home.path || selectedTab == "home",
@@ -70,17 +99,19 @@ fun PsychologistBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
 
         NavigationBarItem(
             icon = {
-                Icon(
-                    imageVector = Icons.Outlined.PersonalInjury,
-                    contentDescription = "Pacientes",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = selectedTab == "pacientes") {
+                    Icon(
+                        imageVector = Icons.Outlined.PersonalInjury,
+                        contentDescription = "Pacientes",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Pacientes", fontSize = 12.sp, style = SourceSansRegular) },
             selected = selectedTab == "pacientes",
@@ -90,17 +121,19 @@ fun PsychologistBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
 
         NavigationBarItem(
             icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Announcement,
-                    contentDescription = "Alertas",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = selectedTab == "alertas") {
+                    Icon(
+                        imageVector = Icons.Outlined.Announcement,
+                        contentDescription = "Alertas",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Alertas", fontSize = 12.sp, style = SourceSansRegular) },
             selected = selectedTab == "alertas",
@@ -110,17 +143,19 @@ fun PsychologistBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
 
         NavigationBarItem(
             icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Bookmarks,
-                    contentDescription = "Biblioteca",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = selectedTab == "biblioteca") {
+                    Icon(
+                        imageVector = Icons.Outlined.Bookmarks,
+                        contentDescription = "Biblioteca",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Biblioteca", fontSize = 12.sp, style = SourceSansRegular) },
             selected = selectedTab == "biblioteca",
@@ -130,17 +165,19 @@ fun PsychologistBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
 
         NavigationBarItem(
             icon = {
-                Icon(
-                    imageVector = if (currentRoute == Route.Profile.path || selectedTab == "perfil") Icons.Filled.Person else Icons.Outlined.Person,
-                    contentDescription = "Perfil",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = currentRoute == Route.Profile.path || selectedTab == "perfil") {
+                    Icon(
+                        imageVector = if (currentRoute == Route.Profile.path || selectedTab == "perfil") Icons.Filled.Person else Icons.Outlined.Person,
+                        contentDescription = "Perfil",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Perfil", fontSize = 12.sp, style = SourceSansRegular) },
             selected = currentRoute == Route.Profile.path || selectedTab == "perfil",
@@ -155,7 +192,7 @@ fun PsychologistBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
     }
