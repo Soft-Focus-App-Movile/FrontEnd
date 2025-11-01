@@ -33,13 +33,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.softfocus.core.navigation.Route
+import com.softfocus.ui.components.DraggableAIButton
 import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Gray828
 import com.softfocus.ui.theme.SourceSansRegular
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PatientHomeScreen() {
+fun PatientHomeScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var locationText by remember { mutableStateOf("Lima, Peru") }
@@ -64,61 +68,62 @@ fun PatientHomeScreen() {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_location_pin),
-                            contentDescription = null,
-                            tint = Color(0xFF497654),
-                            modifier = Modifier.size(23.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = locationText,
-                            style = SourceSansRegular,
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                    }
-                },
-                actions = {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.Red,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_location_pin),
+                                contentDescription = null,
+                                tint = Color(0xFF497654),
+                                modifier = Modifier.size(23.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "SOS",
+                                text = locationText,
                                 style = SourceSansRegular,
                                 fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = Color.Gray
                             )
                         }
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(onClick = { }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_notification_bell),
-                            contentDescription = "Notificaciones",
-                            tint = Color(0xFF497654),
-                            modifier = Modifier.size(25.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    },
+                    actions = {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.Red,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "SOS",
+                                    style = SourceSansRegular,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(onClick = { }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_notification_bell),
+                                contentDescription = "Notificaciones",
+                                tint = Color(0xFF497654),
+                                modifier = Modifier.size(25.dp)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White
+                    )
                 )
-            )
-        }
-    ) { paddingValues ->
+            }
+        ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -452,6 +457,14 @@ fun PatientHomeScreen() {
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+
+        // Botón flotante de IA arrastrable
+        DraggableAIButton(
+            onClick = {
+                navController.navigate(Route.AIWelcome.path)
+            }
+        )
+    }
 }
 
 @Composable
@@ -564,5 +577,6 @@ val mockRecommendations = listOf(
 @Preview(showBackground = true)
 @Composable
 fun PatientHomeScreenPreview() {
-    PatientHomeScreen()
+    val navController = rememberNavController()
+    PatientHomeScreen(navController)
 }

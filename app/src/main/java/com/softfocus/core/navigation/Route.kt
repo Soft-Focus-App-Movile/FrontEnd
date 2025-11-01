@@ -23,6 +23,19 @@ sealed class Route(val path: String) {
     data object Crisis : Route("crisis")
     data object Library : Route("library")
     data object AiChat : Route("ai_chat")
+    data object AIWelcome : Route("ai_welcome")
+    data object AIChat : Route("ai_chat_screen/{initialMessage}?sessionId={sessionId}") {
+        fun createRoute(initialMessage: String? = null, sessionId: String? = null): String {
+            return if (sessionId != null) {
+                "ai_chat_screen/null?sessionId=$sessionId"
+            } else if (initialMessage != null) {
+                val encodedMessage = java.net.URLEncoder.encode(initialMessage, "UTF-8")
+                "ai_chat_screen/$encodedMessage"
+            } else {
+                "ai_chat_screen/null"
+            }
+        }
+    }
 
     data object ConnectPsychologist : Route("connect_psychologist")
 

@@ -1,14 +1,20 @@
 package com.softfocus.ui.components.navigation
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -20,9 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,6 +40,26 @@ import com.softfocus.ui.theme.Green29
 import com.softfocus.ui.theme.SourceSansRegular
 
 @Composable
+private fun BottomNavIcon(
+    isSelected: Boolean,
+    content: @Composable () -> Unit
+) {
+    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+        content()
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .width(10.dp)
+                .height(5.dp)
+                .background(
+                    if (isSelected) Green29 else Color.Transparent,
+                    RoundedCornerShape(3.dp)
+                )
+        )
+    }
+}
+
+@Composable
 fun GeneralBottomNav(navController: NavController) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     var selectedTab by remember { mutableStateOf("home") }
@@ -46,16 +70,18 @@ fun GeneralBottomNav(navController: NavController) {
     ) {
         NavigationBarItem(
             icon = {
-                Icon(
-                    painter = painterResource(
-                        id = if (currentRoute == Route.Home.path || selectedTab == "home")
-                            R.drawable.ic_home_rounded_filled
-                        else
-                            R.drawable.ic_home_rounded_outlined
-                    ),
-                    contentDescription = "Inicio",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = currentRoute == Route.Home.path || selectedTab == "home") {
+                    Icon(
+                        painter = painterResource(
+                            id = if (currentRoute == Route.Home.path || selectedTab == "home")
+                                R.drawable.ic_home_rounded_filled
+                            else
+                                R.drawable.ic_home_rounded_outlined
+                        ),
+                        contentDescription = "Inicio",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Inicio", fontSize = 12.sp, style = SourceSansRegular) },
             selected = currentRoute == Route.Home.path || selectedTab == "home",
@@ -72,17 +98,19 @@ fun GeneralBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
 
         NavigationBarItem(
             icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Book,
-                    contentDescription = "Diario",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = selectedTab == "diario") {
+                    Icon(
+                        imageVector = Icons.Outlined.Book,
+                        contentDescription = "Diario",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Diario", fontSize = 12.sp, style = SourceSansRegular) },
             selected = selectedTab == "diario",
@@ -92,31 +120,30 @@ fun GeneralBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
 
         NavigationBarItem(
             icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ia_button),
-                    contentDescription = "IA",
-                    tint = Color.Unspecified,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .then(
-                            if (selectedTab == "ia") Modifier.border(2.dp, Green29, RoundedCornerShape(4.dp))
-                            else Modifier
-                        )
-                )
+                BottomNavIcon(isSelected = selectedTab == "ia") {
+                    Icon(
+                        imageVector = Icons.Outlined.Psychology,
+                        contentDescription = "IA",
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             },
             label = { Text("IA", fontSize = 12.sp, style = SourceSansRegular) },
             selected = selectedTab == "ia",
-            onClick = { selectedTab = "ia" },
+            onClick = {
+                selectedTab = "ia"
+                navController.navigate(Route.AIWelcome.path)
+            },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color.Unspecified,
+                selectedIconColor = Green29,
                 selectedTextColor = Green29,
-                unselectedIconColor = Color.Unspecified,
+                unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
                 indicatorColor = Color.Transparent
             )
@@ -124,11 +151,13 @@ fun GeneralBottomNav(navController: NavController) {
 
         NavigationBarItem(
             icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Bookmarks,
-                    contentDescription = "Biblioteca",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = selectedTab == "biblioteca") {
+                    Icon(
+                        imageVector = Icons.Outlined.Bookmarks,
+                        contentDescription = "Biblioteca",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Biblioteca", fontSize = 12.sp, style = SourceSansRegular) },
             selected = selectedTab == "biblioteca",
@@ -138,17 +167,19 @@ fun GeneralBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
 
         NavigationBarItem(
             icon = {
-                Icon(
-                    imageVector = if (currentRoute == Route.Profile.path || selectedTab == "perfil") Icons.Filled.Person else Icons.Outlined.Person,
-                    contentDescription = "Perfil",
-                    modifier = Modifier.size(24.dp)
-                )
+                BottomNavIcon(isSelected = currentRoute == Route.Profile.path || selectedTab == "perfil") {
+                    Icon(
+                        imageVector = if (currentRoute == Route.Profile.path || selectedTab == "perfil") Icons.Filled.Person else Icons.Outlined.Person,
+                        contentDescription = "Perfil",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             },
             label = { Text("Perfil", fontSize = 12.sp, style = SourceSansRegular) },
             selected = currentRoute == Route.Profile.path || selectedTab == "perfil",
@@ -163,7 +194,7 @@ fun GeneralBottomNav(navController: NavController) {
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                indicatorColor = Green29.copy(alpha = 0.12f)
+                indicatorColor = Color.Transparent
             )
         )
     }

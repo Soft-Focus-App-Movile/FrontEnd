@@ -1,5 +1,6 @@
 package com.softfocus.features.admin.data.remote
 
+import com.softfocus.core.networking.ApiConstants
 import com.softfocus.features.admin.data.models.request.ChangeUserStatusRequestDto
 import com.softfocus.features.admin.data.models.request.VerifyPsychologistRequestDto
 import com.softfocus.features.admin.data.models.response.PsychologistDetailResponseDto
@@ -12,7 +13,7 @@ import retrofit2.http.Query
 
 interface AdminService {
 
-    @GET("users")
+    @GET(ApiConstants.Users.BASE)
     suspend fun getAllUsers(
         @Query("page") page: Int = 1,
         @Query("pageSize") pageSize: Int = 20,
@@ -24,18 +25,18 @@ interface AdminService {
         @Query("sortDescending") sortDescending: Boolean = false
     ): UserListResponseDto
 
-    @GET("users/{id}")
+    @GET(ApiConstants.Users.BY_ID)
     suspend fun getUserDetail(
         @Path("id") userId: String
     ): PsychologistDetailResponseDto
 
-    @PUT("users/{id}/verify")
+    @PUT(ApiConstants.Users.VERIFY_PSYCHOLOGIST)
     suspend fun verifyPsychologist(
         @Path("id") userId: String,
         @Body request: VerifyPsychologistRequestDto
     )
 
-    @PUT("users/{id}/status")
+    @PUT(ApiConstants.Users.CHANGE_STATUS)
     suspend fun changeUserStatus(
         @Path("id") userId: String,
         @Body request: ChangeUserStatusRequestDto
