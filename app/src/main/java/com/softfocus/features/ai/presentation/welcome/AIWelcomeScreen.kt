@@ -37,9 +37,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,9 +62,44 @@ import com.softfocus.features.ai.presentation.chat.components.SuggestedQuestionC
 import com.softfocus.features.ai.presentation.di.AIPresentationModule
 import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Green29
+import com.softfocus.ui.theme.Green65
+import com.softfocus.ui.theme.GreenC0
 import com.softfocus.ui.theme.SourceSansRegular
+import com.softfocus.ui.theme.White
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+
+/**
+ * Custom shape that creates an oval bottom edge going from border to border
+ */
+class OvalBottomShape : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val path = Path().apply {
+            // Start at top-left corner
+            moveTo(0f, 0f)
+
+            // Draw top edge
+            lineTo(size.width, 0f)
+
+            // Draw right edge
+            lineTo(size.width, size.height - 100f)
+
+            // Draw oval bottom curve from right to left
+            quadraticBezierTo(
+                size.width / 2f, size.height + 100f,  // Control point (center, below)
+                0f, size.height - 100f                 // End point (left)
+            )
+
+            // Close path back to start
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
 
 @Composable
 fun AIWelcomeScreen(
@@ -78,15 +122,24 @@ fun AIWelcomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF8AAE7C),
-                        Color(0xFF6B8E6F)
+            .background(White)
+    ) {
+        // Gradient background with oval bottom
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxSize(0.85f)
+                .clip(OvalBottomShape())
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Green65,  // 0%
+                            GreenC0   // 100%
+                        )
                     )
                 )
-            )
-    ) {
+        )
+
         IconButton(
             onClick = onClose,
             modifier = Modifier
@@ -120,7 +173,7 @@ fun AIWelcomeScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Icon(
-                painter = painterResource(id = R.drawable.ia_button),
+                painter = painterResource(id = R.drawable.focus_ia),
                 contentDescription = "Focus Panda",
                 tint = Color.Unspecified,
                 modifier = Modifier.size(180.dp)
@@ -274,25 +327,30 @@ private fun SessionItem(
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
+            // Título: lastMessagePreview o fecha como fallback
             Text(
-                text = session.lastMessageAt.format(
-                    DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
-                ),
+                text = session.lastMessagePreview?.takeIf { it.isNotBlank() }
+                    ?: session.lastMessageAt.format(
+                        DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
+                    ),
                 style = SourceSansRegular,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.Black,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
+
             Text(
-                text = "${session.messageCount} mensajes",
+                text = "${session.lastMessageAt.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))} • ${session.messageCount} mensajes",
                 style = SourceSansRegular,
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = Color.Gray,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

@@ -26,7 +26,8 @@ data class ChatSessionResponseDto(
             startedAt = parseDateTime(startedAt),
             lastMessageAt = parseDateTime(lastMessageAt),
             messageCount = messageCount,
-            isActive = isActive
+            isActive = isActive,
+            lastMessagePreview = lastMessagePreview
         )
     }
 

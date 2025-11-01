@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softfocus.R
@@ -55,9 +56,14 @@ import com.softfocus.features.ai.presentation.di.AIPresentationModule
 import com.softfocus.features.ai.domain.models.MessageRole
 import com.softfocus.features.ai.presentation.chat.components.ChatMessageBubble
 import com.softfocus.features.ai.presentation.chat.components.SuggestedQuestionChip
+import com.softfocus.ui.theme.Black
+import com.softfocus.ui.theme.Gray222
 import com.softfocus.ui.theme.Green29
+import com.softfocus.ui.theme.Green65
 import com.softfocus.ui.theme.SourceSansRegular
+import com.softfocus.ui.theme.White
 import com.softfocus.ui.theme.YellowE8
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,33 +127,23 @@ fun AIChatScreen(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Cerrar",
-                            tint = Color.White
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.startNewConversation() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Nueva conversación",
-                            tint = Color.White
+                            tint = White
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black
+                    containerColor = Black
                 )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = Black
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White)
+                .background(Black)
         ) {
             if (state.showLimitWarning) {
                 Card(
@@ -214,12 +210,11 @@ fun AIChatScreen(
                 }
             }
 
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .background(Black)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 TextField(
                     value = state.currentMessage,
@@ -228,37 +223,61 @@ fun AIChatScreen(
                         Text(
                             text = "Escribe tu mensaje...",
                             style = SourceSansRegular,
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
+                            color = Color.Gray
                         )
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp),
+                    leadingIcon = {
+                        IconButton(
+                            onClick = { viewModel.startNewConversation() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Nueva conversación",
+                                tint = White
+                            )
+                        }
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                if (state.currentMessage.isNotBlank()) {
+                                    viewModel.sendMessage()
+                                }
+                            },
+                            enabled = state.currentMessage.isNotBlank() && !state.isLoading
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Enviar",
+                                tint = if (state.currentMessage.isNotBlank()) White else Color.Gray
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF5F5F5),
-                        unfocusedContainerColor = Color(0xFFF5F5F5),
+                        focusedContainerColor = Gray222,
+                        unfocusedContainerColor = Gray222,
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedTextColor = White,
+                        unfocusedTextColor = White,
+                        cursorColor = White
                     ),
                     singleLine = true
                 )
-
-                IconButton(
-                    onClick = {
-                        if (state.currentMessage.isNotBlank()) {
-                            viewModel.sendMessage()
-                        }
-                    },
-                    enabled = state.currentMessage.isNotBlank() && !state.isLoading
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Enviar",
-                        tint = if (state.currentMessage.isNotBlank()) Green29 else Color.Gray
-                    )
-                }
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AIChatScreenPreview() {
+    AIChatScreen(
+        initialMessage = "Hola, necesito ayuda",
+        sessionId = null,
+        onBackClick = {}
+    )
 }

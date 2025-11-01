@@ -19,7 +19,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softfocus.features.ai.domain.models.MessageRole
+import com.softfocus.ui.theme.Gray222
+import com.softfocus.ui.theme.Green65
 import com.softfocus.ui.theme.SourceSansRegular
+import com.softfocus.ui.theme.White
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.softfocus.features.ai.domain.models.ChatMessage
@@ -30,8 +33,8 @@ fun ChatMessageBubble(
     modifier: Modifier = Modifier
 ) {
     val isUser = message.role == MessageRole.USER
-    val bubbleColor = if (isUser) Color(0xFF8AAE7C) else Color(0xFF2C2C2C)
-    val textColor = Color.White
+    val bubbleColor = if (isUser) Green65 else Gray222
+    val textColor = White
 
     Box(
         modifier = modifier

@@ -1,5 +1,6 @@
 package com.softfocus.features.auth.data.remote
 
+import com.softfocus.core.networking.ApiConstants
 import com.softfocus.features.auth.data.models.request.LoginRequestDto
 import com.softfocus.features.auth.data.models.request.OAuthLoginRequestDto
 import com.softfocus.features.auth.data.models.request.OAuthVerifyRequestDto
@@ -19,16 +20,16 @@ import retrofit2.http.Part
 interface AuthService {
 
 
-    @POST("auth/login")
+    @POST(ApiConstants.Auth.LOGIN)
     suspend fun login(@Body request: LoginRequestDto): LoginResponseDto
 
 
-    @POST("auth/register/general")
+    @POST(ApiConstants.Auth.REGISTER_GENERAL)
     suspend fun registerGeneralUser(@Body request: RegisterGeneralUserRequestDto): RegisterResponseDto
 
 
     @Multipart
-    @POST("auth/register/psychologist")
+    @POST(ApiConstants.Auth.REGISTER_PSYCHOLOGIST)
     suspend fun registerPsychologist(
         @Part firstName: MultipartBody.Part,
         @Part lastName: MultipartBody.Part,
@@ -49,24 +50,24 @@ interface AuthService {
 
 
     @Deprecated("Use registerGeneralUser or registerPsychologist instead")
-    @POST("auth/register")
+    @POST(ApiConstants.Auth.REGISTER)
     suspend fun register(@Body request: RegisterRequestDto): RegisterResponseDto
 
 
-    @POST("auth/social-login")
+    @POST(ApiConstants.Auth.SOCIAL_LOGIN)
     suspend fun socialLogin(@Body request: SocialLoginRequestDto): LoginResponseDto
 
 
-    @POST("auth/oauth/verify")
+    @POST(ApiConstants.Auth.OAUTH_VERIFY)
     suspend fun verifyOAuth(@Body request: OAuthVerifyRequestDto): OAuthVerificationResponseDto
 
 
-    @POST("auth/oauth")
+    @POST(ApiConstants.Auth.OAUTH)
     suspend fun oauthLogin(@Body request: OAuthLoginRequestDto): LoginResponseDto
 
 
     @Multipart
-    @POST("auth/oauth/complete-registration")
+    @POST(ApiConstants.Auth.OAUTH_COMPLETE_REGISTRATION)
     suspend fun completeOAuthRegistration(
         @Part tempToken: MultipartBody.Part,
         @Part userType: MultipartBody.Part,
@@ -75,7 +76,7 @@ interface AuthService {
 
 
     @Multipart
-    @POST("auth/oauth/complete-registration")
+    @POST(ApiConstants.Auth.OAUTH_COMPLETE_REGISTRATION)
     suspend fun completeOAuthRegistrationPsychologist(
         @Part tempToken: MultipartBody.Part,
         @Part userType: MultipartBody.Part,

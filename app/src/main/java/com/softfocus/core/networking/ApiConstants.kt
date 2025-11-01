@@ -1,7 +1,7 @@
 package com.softfocus.core.networking
 
 object ApiConstants {
-    // 10.0.2.2 is the special IP for Android emulator to access host machine's localhost
+
     const val BASE_URL = "http://98.90.172.251:5000/api/v1/"
 
     // Google OAuth Client IDs
@@ -16,16 +16,36 @@ object ApiConstants {
 
     // Auth endpoints
     object Auth {
-        const val REGISTER = "auth/register"
         const val LOGIN = "auth/login"
+        const val REGISTER = "auth/register"
+        const val REGISTER_GENERAL = "auth/register/general"
+        const val REGISTER_PSYCHOLOGIST = "auth/register/psychologist"
+        const val SOCIAL_LOGIN = "auth/social-login"
         const val OAUTH = "auth/oauth"
+        const val OAUTH_VERIFY = "auth/oauth/verify"
+        const val OAUTH_COMPLETE_REGISTRATION = "auth/oauth/complete-registration"
         const val FORGOT_PASSWORD = "auth/forgot-password"
         const val RESET_PASSWORD = "auth/reset-password"
     }
 
     // User endpoints
     object Users {
+        const val BASE = "users"
         const val PROFILE = "users/profile"
+        const val BY_ID = "users/{id}"
+        const val VERIFY_PSYCHOLOGIST = "users/{id}/verify"
+        const val CHANGE_STATUS = "users/{id}/status"
+        const val PSYCHOLOGIST_INVITATION_CODE = "users/psychologist/invitation-code"
+
+        fun getById(id: String) = BY_ID.replace("{id}", id)
+        fun verifyPsychologist(id: String) = VERIFY_PSYCHOLOGIST.replace("{id}", id)
+        fun changeStatus(id: String) = CHANGE_STATUS.replace("{id}", id)
+    }
+
+    // Therapy endpoints
+    object Therapy {
+        const val MY_RELATIONSHIP = "therapy/my-relationship"
+        const val CONNECT = "therapy/connect"
     }
 
     // AI endpoints
@@ -40,13 +60,25 @@ object ApiConstants {
         fun getChatSessionMessages(sessionId: String) = CHAT_SESSION_MESSAGES.replace("{sessionId}", sessionId)
     }
 
+    // Notification endpoints
     object Notifications {
         const val BASE = "notifications"
-        const val BY_ID = "notifications/{id}"
-        const val MARK_AS_READ = "notifications/{id}/read"
+        const val BY_USER_ID = "notifications/{userId}"
+        const val DETAIL = "notifications/detail/{notificationId}"
+        const val MARK_AS_READ = "notifications/{notificationId}/read"
         const val MARK_ALL_READ = "notifications/read-all"
+        const val DELETE = "notifications/{notificationId}"
         const val UNREAD_COUNT = "notifications/unread-count"
-        const val PREFERENCES = "notifications/preferences"
-        const val PREFERENCES_RESET = "notifications/preferences/reset"
+
+        fun getByUserId(userId: String) = BY_USER_ID.replace("{userId}", userId)
+        fun getDetail(notificationId: String) = DETAIL.replace("{notificationId}", notificationId)
+        fun markAsRead(notificationId: String) = MARK_AS_READ.replace("{notificationId}", notificationId)
+        fun delete(notificationId: String) = DELETE.replace("{notificationId}", notificationId)
+    }
+
+    // Preferences endpoints
+    object Preferences {
+        const val BASE = "preferences"
+        const val RESET = "preferences/reset"
     }
 }

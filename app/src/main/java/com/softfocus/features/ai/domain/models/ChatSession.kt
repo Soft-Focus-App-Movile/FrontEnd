@@ -7,5 +7,6 @@ data class ChatSession(
     val startedAt: LocalDateTime,
     val lastMessageAt: LocalDateTime,
     val messageCount: Int,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val lastMessagePreview: String? = null
 )
