@@ -37,11 +37,18 @@ import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Gray828
 import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.SourceSansRegular
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Badge
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.softfocus.features.notifications.presentation.list.NotificationsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
-fun GeneralHomeScreen() {
+fun GeneralHomeScreen(
+    onNavigateToNotifications: () -> Unit = {}
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var locationText by remember { mutableStateOf("Lima, Peru") }
@@ -52,6 +59,8 @@ fun GeneralHomeScreen() {
     val userName = remember {
         currentUser?.fullName?.split(" ")?.firstOrNull() ?: "Usuario"
     }
+    val notificationsViewModel: NotificationsViewModel = hiltViewModel()
+    val notificationsState by notificationsViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -90,13 +99,30 @@ fun GeneralHomeScreen() {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_notification_bell),
-                            contentDescription = "Notificaciones",
-                            tint = Green49,
-                            modifier = Modifier.size(25.dp)
-                        )
+                    BadgedBox(
+                        badge = {
+                            if (notificationsState.unreadCount > 0) {
+                                Badge(
+                                    containerColor = Color.Red,
+                                    contentColor = Color.White
+                                ) {
+                                    Text(
+                                        text = if (notificationsState.unreadCount > 99) "99+"
+                                        else notificationsState.unreadCount.toString(),
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+                        }
+                    ) {
+                        IconButton(onClick = onNavigateToNotifications) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_notification_bell),
+                                contentDescription = "Notificaciones",
+                                tint = Green49,
+                                modifier = Modifier.size(25.dp)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

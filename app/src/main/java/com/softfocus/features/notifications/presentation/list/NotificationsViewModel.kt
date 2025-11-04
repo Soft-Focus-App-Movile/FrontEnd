@@ -1,7 +1,6 @@
 package com.softfocus.features.notifications.presentation.list
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.softfocus.core.data.local.UserSession

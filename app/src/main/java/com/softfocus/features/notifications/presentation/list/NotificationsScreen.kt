@@ -1,7 +1,6 @@
 package com.softfocus.features.notifications.presentation.list
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,11 +18,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+
+
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.softfocus.features.notifications.domain.models.*
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,7 +115,7 @@ fun NotificationsScreen(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+
 @Composable
 private fun NotificationsList(
     notifications: List<Notification>,
@@ -138,7 +140,7 @@ private fun NotificationsList(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+
 @Composable
 private fun NotificationItem(
     notification: Notification,
@@ -326,7 +328,7 @@ private fun getNotificationColor(type: NotificationType) = when (type) {
     NotificationType.SYSTEM_UPDATE -> Color(0xFF607D8B)
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+
 private fun formatTimeAgo(dateTime: java.time.LocalDateTime): String {
     val now = java.time.LocalDateTime.now()
     val days = ChronoUnit.DAYS.between(dateTime, now)

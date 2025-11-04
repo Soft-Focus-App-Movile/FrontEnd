@@ -36,6 +36,7 @@ import com.softfocus.core.utils.SessionManager
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
+
 /**
  * Shared navigation graph.
  * Contains routes shared by General, Patient, and Psychologist users (post-login):
@@ -98,7 +99,11 @@ fun NavGraphBuilder.sharedNavigation(
                             if (isPatient.value) {
                                 PatientHomeScreen(navController)
                             } else {
-                                GeneralHomeScreen()
+                                GeneralHomeScreen(
+                                    onNavigateToNotifications = {
+                                        navController.navigate(Route.Notifications.path)
+                                    }
+                                )
                             }
                         }
                     }
@@ -158,27 +163,53 @@ fun NavGraphBuilder.sharedNavigation(
 
     // Notifications Screen
     composable(Route.Notifications.path) {
-        val viewModel = remember {
-            NotificationPresentationModule.getNotificationsViewModel(context)
-        }
-        NotificationsScreen(
-            viewModel = viewModel,
-            onNavigateBack = {
-                navController.popBackStack()
-            },
-            onNavigateToSettings = {
-                navController.navigate(Route.NotificationPreferences.path)
+        val userSession = remember { UserSession(context) }
+        val currentUser = userSession.getUser()
+        val homeViewModel = remember { TherapyPresentationModule.getHomeViewModel(context) }
+        val isPatient = homeViewModel.isPatient.collectAsState()
+        val isLoading = homeViewModel.isLoading.collectAsState()
+
+        if (isLoading.value) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF6B8E6F))
             }
-        )
+        } else {
+            Scaffold(
+                containerColor = Color.Transparent,
+                bottomBar = {
+                    when (currentUser?.userType) {
+                        UserType.PSYCHOLOGIST -> PsychologistBottomNav(navController)
+                        UserType.GENERAL, UserType.PATIENT -> {
+                            if (isPatient.value) {
+                                PatientBottomNav(navController)
+                            } else {
+                                GeneralBottomNav(navController)
+                            }
+                        }
+                        else -> GeneralBottomNav(navController)
+                    }
+                }
+            ) { paddingValues ->
+                Box(modifier = Modifier.padding(paddingValues)) {
+                    NotificationsScreen(
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        },
+                        onNavigateToSettings = {
+                            navController.navigate(Route.NotificationPreferences.path)
+                        }
+                    )
+                }
+            }
+        }
     }
 
     // Notification Preferences Screen
     composable(Route.NotificationPreferences.path) {
-        val viewModel = remember {
-            NotificationPresentationModule.getNotificationPreferencesViewModel(context)
-        }
         NotificationPreferencesScreen(
-            viewModel = viewModel,
             onNavigateBack = {
                 navController.popBackStack()
             }
