@@ -1,6 +1,5 @@
 package com.softfocus.features.notifications.presentation.list
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,14 +17,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-
-
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.softfocus.features.notifications.domain.models.*
+import com.softfocus.ui.theme.CrimsonSemiBold
+import com.softfocus.ui.theme.Green49
+import com.softfocus.ui.theme.SourceSansRegular
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,24 +40,47 @@ fun NotificationsScreen(
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
-                title = { Text("Notificaciones") },
+                title = {
+                    Text(
+                        "Notificaciones",
+                        style = CrimsonSemiBold,
+                        fontSize = 24.sp,
+                        color = Green49
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Volver")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            "Volver",
+                            tint = Green49
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, "Configuración")
+                        Icon(
+                            Icons.Default.Settings,
+                            "Configuración",
+                            tint = Green49
+                        )
                     }
                     if (state.notifications.any { it.status != DeliveryStatus.READ }) {
                         TextButton(onClick = { viewModel.markAllAsRead() }) {
-                            Text("Marcar todas")
+                            Text(
+                                "Marcar todas",
+                                style = SourceSansRegular,
+                                color = Green49
+                            )
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
             )
         }
     ) { padding ->
@@ -63,25 +88,56 @@ fun NotificationsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .background(Color.White)
         ) {
-            // Tabs
-            TabRow(selectedTabIndex = selectedTab) {
+            // Tabs más centrados y con color verde tenue
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.White,
+                contentColor = Green49,
+                indicator = { tabPositions ->
+                    if (selectedTab < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier
+                                .fillMaxWidth()
+                                .wrapContentSize(Alignment.BottomStart)
+                                .offset(x = tabPositions[selectedTab].left)
+                                .width(tabPositions[selectedTab].width),
+                            color = Green49
+                        )
+                    }
+                }
+            ) {
                 Tab(
                     selected = selectedTab == 0,
                     onClick = {
                         selectedTab = 0
                         viewModel.filterNotifications(null)
                     },
-                    text = { Text("Todas") }
-                )
+                    modifier = Modifier.padding(vertical = 12.dp)
+                ) {
+                    Text(
+                        "Todas",
+                        style = SourceSansRegular,
+                        fontSize = 16.sp,
+                        color = if (selectedTab == 0) Green49 else Color.Gray
+                    )
+                }
                 Tab(
                     selected = selectedTab == 1,
                     onClick = {
                         selectedTab = 1
                         viewModel.filterNotifications(DeliveryStatus.DELIVERED)
                     },
-                    text = { Text("No leídas") }
-                )
+                    modifier = Modifier.padding(vertical = 12.dp)
+                ) {
+                    Text(
+                        "No leídas",
+                        style = SourceSansRegular,
+                        fontSize = 16.sp,
+                        color = if (selectedTab == 1) Green49 else Color.Gray
+                    )
+                }
             }
 
             // Content
@@ -91,7 +147,7 @@ fun NotificationsScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = Green49)
                     }
                 }
                 state.error != null -> {
@@ -115,7 +171,6 @@ fun NotificationsScreen(
     }
 }
 
-
 @Composable
 private fun NotificationsList(
     notifications: List<Notification>,
@@ -135,11 +190,10 @@ private fun NotificationsList(
                 onClick = { onNotificationClick(notification) },
                 onDelete = { onDeleteClick(notification) }
             )
-            HorizontalDivider()
+            HorizontalDivider(color = Color(0xFFE0E0E0))
         }
     }
 }
-
 
 @Composable
 private fun NotificationItem(
@@ -154,9 +208,9 @@ private fun NotificationItem(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         color = if (notification.status == DeliveryStatus.READ) {
-            MaterialTheme.colorScheme.surface
+            Color.White
         } else {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+            Color(0xFFF5F9F5) // Verde muy tenue para no leídas
         }
     ) {
         Row(
@@ -170,14 +224,14 @@ private fun NotificationItem(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(getNotificationColor(notification.type).copy(alpha = 0.2f)),
+                    .background(getNotificationColor(notification.type).copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = getNotificationIcon(notification.type),
                     contentDescription = null,
                     tint = getNotificationColor(notification.type),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
@@ -191,7 +245,8 @@ private fun NotificationItem(
                 ) {
                     Text(
                         text = notification.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = SourceSansRegular,
+                        fontSize = 16.sp,
                         fontWeight = if (notification.status != DeliveryStatus.READ) {
                             FontWeight.Bold
                         } else {
@@ -199,12 +254,14 @@ private fun NotificationItem(
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        color = Color(0xFF2C2C2C)
                     )
                     Text(
                         text = formatTimeAgo(notification.createdAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = SourceSansRegular,
+                        fontSize = 12.sp,
+                        color = Color.Gray
                     )
                 }
 
@@ -212,8 +269,9 @@ private fun NotificationItem(
 
                 Text(
                     text = notification.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = SourceSansRegular,
+                    fontSize = 14.sp,
+                    color = Color.Gray,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -222,8 +280,9 @@ private fun NotificationItem(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Prioridad ${notification.priority.name.lowercase()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
+                        style = SourceSansRegular,
+                        fontSize = 12.sp,
+                        color = Color(0xFFE53935)
                     )
                 }
             }
@@ -233,7 +292,8 @@ private fun NotificationItem(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Eliminar",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = Color.Gray,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -242,8 +302,19 @@ private fun NotificationItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Eliminar notificación") },
-            text = { Text("¿Estás seguro de que deseas eliminar esta notificación?") },
+            title = {
+                Text(
+                    "Eliminar notificación",
+                    style = CrimsonSemiBold,
+                    color = Green49
+                )
+            },
+            text = {
+                Text(
+                    "¿Estás seguro de que deseas eliminar esta notificación?",
+                    style = SourceSansRegular
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -251,12 +322,20 @@ private fun NotificationItem(
                         showDeleteDialog = false
                     }
                 ) {
-                    Text("Eliminar")
+                    Text(
+                        "Eliminar",
+                        style = SourceSansRegular,
+                        color = Color(0xFFE53935)
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar")
+                    Text(
+                        "Cancelar",
+                        style = SourceSansRegular,
+                        color = Green49
+                    )
                 }
             }
         )
@@ -271,18 +350,20 @@ private fun EmptyNotificationsView() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Notifications,
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                tint = Color.Gray.copy(alpha = 0.3f)
             )
             Text(
                 text = "No hay ninguna notificación no leída",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = SourceSansRegular,
+                fontSize = 16.sp,
+                color = Color.Gray
             )
         }
     }
@@ -296,15 +377,26 @@ private fun ErrorView(error: String, onRetry: () -> Unit) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
         ) {
             Text(
                 text = error,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error
+                style = SourceSansRegular,
+                fontSize = 16.sp,
+                color = Color(0xFFE53935)
             )
-            Button(onClick = onRetry) {
-                Text("Reintentar")
+            Button(
+                onClick = onRetry,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Green49
+                )
+            ) {
+                Text(
+                    "Reintentar",
+                    style = SourceSansRegular,
+                    color = Color.White
+                )
             }
         }
     }
@@ -320,14 +412,13 @@ private fun getNotificationIcon(type: NotificationType) = when (type) {
 }
 
 private fun getNotificationColor(type: NotificationType) = when (type) {
-    NotificationType.CHECKIN_REMINDER -> Color(0xFF4CAF50)
-    NotificationType.CRISIS_ALERT -> Color(0xFFF44336)
-    NotificationType.MESSAGE_RECEIVED -> Color(0xFF2196F3)
-    NotificationType.ASSIGNMENT_DUE -> Color(0xFFFF9800)
-    NotificationType.APPOINTMENT_REMINDER -> Color(0xFF9C27B0)
-    NotificationType.SYSTEM_UPDATE -> Color(0xFF607D8B)
+    NotificationType.CHECKIN_REMINDER -> Green49
+    NotificationType.CRISIS_ALERT -> Color(0xFFE53935)
+    NotificationType.MESSAGE_RECEIVED -> Color(0xFF1E88E5)
+    NotificationType.ASSIGNMENT_DUE -> Color(0xFFFB8C00)
+    NotificationType.APPOINTMENT_REMINDER -> Color(0xFF8E24AA)
+    NotificationType.SYSTEM_UPDATE -> Color(0xFF546E7A)
 }
-
 
 private fun formatTimeAgo(dateTime: java.time.LocalDateTime): String {
     val now = java.time.LocalDateTime.now()
