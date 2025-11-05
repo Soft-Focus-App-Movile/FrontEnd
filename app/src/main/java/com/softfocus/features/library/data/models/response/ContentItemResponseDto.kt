@@ -10,10 +10,10 @@ import com.softfocus.features.library.domain.models.EmotionalTag
  */
 data class ContentItemResponseDto(
     @SerializedName("id")
-    val id: String,
-
-    @SerializedName("externalId")
     val externalId: String,
+
+    @SerializedName("_id")
+    val id: String? = null,
 
     @SerializedName("type")
     val type: String,
@@ -95,7 +95,7 @@ data class ContentItemResponseDto(
      */
     fun toDomain(): ContentItem {
         return ContentItem(
-            id = id,
+            id = id ?: externalId,
             externalId = externalId,
             type = ContentType.fromString(type),
             title = title,

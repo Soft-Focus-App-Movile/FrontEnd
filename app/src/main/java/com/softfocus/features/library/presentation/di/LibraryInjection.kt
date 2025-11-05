@@ -10,8 +10,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.softfocus.core.networking.ApiConstants
 import com.softfocus.features.library.data.di.LibraryDataModule
 import com.softfocus.features.library.domain.repositories.LibraryRepository
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 /**
  * Helper para inyección de dependencias de Library en Composables
@@ -21,11 +24,28 @@ import retrofit2.converter.gson.GsonConverterFactory
  */
 
 /**
+ * Crea el cliente OkHttp con logging
+ */
+private fun getOkHttpClient(): OkHttpClient {
+    val loggingInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+
+    return OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .addInterceptor(loggingInterceptor)
+        .build()
+}
+
+/**
  * Crea o reutiliza una instancia de Retrofit
  */
 private fun getRetrofitInstance(): Retrofit {
     return Retrofit.Builder()
         .baseUrl(ApiConstants.BASE_URL)
+        .client(getOkHttpClient())
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 }

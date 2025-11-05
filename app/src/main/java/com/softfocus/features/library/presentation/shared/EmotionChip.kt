@@ -44,6 +44,8 @@ fun EmotionChip(
             selectedLabelColor = Green29
         ),
         border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
             borderColor = if (selected) Green29 else Color.Gray.copy(alpha = 0.3f),
             selectedBorderColor = Green29,
             borderWidth = 1.dp
