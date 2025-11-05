@@ -1,8 +1,14 @@
 package com.softfocus.core.navigation
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.composable
 
 /**
  * Patient navigation graph.
@@ -24,5 +30,4 @@ fun NavGraphBuilder.patientNavigation(
     // Example:
     // composable(Route.TherapySessions.path) { ... }
     // composable(Route.MyPsychologist.path) { ... }
-    // composable(Route.AssignedExercises.path) { ... }
 }
