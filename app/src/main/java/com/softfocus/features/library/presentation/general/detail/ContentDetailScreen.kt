@@ -94,8 +94,8 @@ fun ContentDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Botón de trailer (solo si hay trailerUrl)
-                if (content.trailerUrl != null) {
+                // Botón de trailer (solo si hay trailerUrl válida)
+                if (!content.trailerUrl.isNullOrBlank()) {
                     TrailerButton(
                         onClick = {
                             showTrailer = true

@@ -76,11 +76,33 @@ fun ContentHeroImage(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.MATCH_PARENT
                             )
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
+
+                            // Configuración del WebView
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                mediaPlaybackRequiresUserGesture = false
+                                loadWithOverviewMode = true
+                                useWideViewPort = true
+                                setSupportZoom(false)
+
+                                // User-Agent de escritorio para evitar redirección a YouTube mobile
+                                userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                                        "(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                            }
+
                             webViewClient = WebViewClient()
 
-                            val embedUrl = "https://www.youtube.com/embed/$videoId?autoplay=1&rel=0"
+                            // URL con parámetros para embed limpio
+                            val embedUrl = "https://www.youtube.com/embed/$videoId?" +
+                                    "autoplay=1&" +          // Reproducción automática
+                                    "rel=0&" +               // Sin videos relacionados
+                                    "controls=0&" +          // Oculta controles
+                                    "modestbranding=1&" +    // Minimiza logo de YouTube
+                                    "playsinline=1&" +       // Reproduce inline
+                                    "fs=0&" +                // Oculta botón pantalla completa
+                                    "iv_load_policy=3&" +    // Sin anotaciones
+                                    "origin=android"         // Validación de origen
                             loadUrl(embedUrl)
                         }
                     },
