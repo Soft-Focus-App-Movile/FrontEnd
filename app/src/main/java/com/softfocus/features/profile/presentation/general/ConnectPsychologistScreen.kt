@@ -49,7 +49,7 @@ fun ConnectPsychologistScreen(
                         text = "Conectar con Psicólogo",
                         style = CrimsonSemiBold,
                         fontSize = 20.sp,
-                        color = Black
+                        color = Green37
                     )
                 },
                 navigationIcon = {
@@ -57,7 +57,7 @@ fun ConnectPsychologistScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Volver",
-                            tint = Black
+                            tint = Green37
                         )
                     }
                 },
@@ -74,158 +74,159 @@ fun ConnectPsychologistScreen(
                 .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
-            // Card con borde gradiente
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
-                    .border(
-                        width = 2.dp,
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                YellowE8,
-                                YellowCB9C
-                            )
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    ),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                Row(
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    // Imagen de jirafa sobresaliendo a la izquierda DENTRO de la card
-                    Image(
-                        painter = painterResource(id = R.drawable.jiraff_focus),
-                        contentDescription = "Jirafa",
-                        modifier = Modifier
-                            .size(200.dp)
-                            .offset(x = (-30).dp)
-                    )
-
-                    // Contenido a la derecha
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        // Texto "Tienes código de tu psicólogo?"
-                        Text(
-                            text = "Tienes código de tu psicólogo?",
-                            style = SourceSansRegular,
-                            fontSize = 12.sp,
-                            color = Yellow7E,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 14.sp
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Campo de texto para el código
-                        OutlinedTextField(
-                            value = code,
-                            onValueChange = { code = it.uppercase().take(8) },
-                            placeholder = {
-                                Text(
-                                    text = "Ingresa código aquí",
-                                    style = SourceSansRegular,
-                                    fontSize = 10.sp,
-                                    color = Color.White
+                        .border(
+                            width = 2.dp,
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    YellowE8,
+                                    YellowCB9C
                                 )
-                            },
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        ),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .padding(start = 80.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(30.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedContainerColor = YellowB5,
-                                focusedContainerColor = YellowB5,
-                                unfocusedTextColor = Color.White,
-                                focusedTextColor = Color.White,
-                                cursorColor = Color.White
-                            ),
-                            textStyle = SourceSansRegular.copy(fontSize = 11.sp),
-                            enabled = uiState !is ConnectUiState.Loading,
-                            singleLine = true
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Botón Conectar
-                        Button(
-                            onClick = {
-                                if (code.isNotBlank()) {
-                                    viewModel.connectWithPsychologist(code)
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(0.7f)
-                                .height(28.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = YellowD8,
-                                disabledContainerColor = GrayD9
-                            ),
-                            enabled = code.isNotBlank() && uiState !is ConnectUiState.Loading,
-                            contentPadding = PaddingValues(vertical = 0.dp)
+                                .padding(end = 4.dp, top = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            if (uiState is ConnectUiState.Loading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    color = Black,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
+                            Text(
+                                text = "Tienes código de tu psicólogo?",
+                                style = SourceSansRegular,
+                                fontSize = 12.sp,
+                                color = Yellow7E,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 14.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = code,
+                                onValueChange = { code = it.uppercase().take(8) },
+                                placeholder = {
+                                    Text(
+                                        text = "Ingresa código aquí",
+                                        style = CrimsonSemiBold,
+                                        fontSize = 15.sp,
+                                        color = White
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedContainerColor = YellowB5,
+                                    focusedContainerColor = YellowB5,
+                                    unfocusedTextColor = Color.White,
+                                    focusedTextColor = Color.White,
+                                    cursorColor = Color.White
+                                ),
+                                textStyle = SourceSansRegular.copy(fontSize = 11.sp),
+                                enabled = uiState !is ConnectUiState.Loading,
+                                singleLine = true
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Button(
+                                onClick = {
+                                    if (code.isNotBlank()) {
+                                        viewModel.connectWithPsychologist(code)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .height(28.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = YellowD8,
+                                    disabledContainerColor = GrayD9
+                                ),
+                                enabled = code.isNotBlank() && uiState !is ConnectUiState.Loading,
+                                contentPadding = PaddingValues(vertical = 0.dp)
+                            ) {
+                                if (uiState is ConnectUiState.Loading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = Black,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Conectar",
+                                        style = SourceSansRegular,
+                                        fontSize = 12.sp,
+                                        color = Black
+                                    )
+                                }
+                            }
+
+                            if (uiState is ConnectUiState.Error) {
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Conectar",
+                                    text = (uiState as ConnectUiState.Error).message,
                                     style = SourceSansRegular,
-                                    fontSize = 12.sp,
-                                    color = Black
+                                    fontSize = 10.sp,
+                                    color = Color.Red,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 12.sp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            TextButton(
+                                onClick = { },
+                                contentPadding = PaddingValues(0.dp),
+                                modifier = Modifier.height(24.dp)
+                            ) {
+                                Text(
+                                    text = "¿No tienes código? Busca psicólogos aquí",
+                                    style = SourceSansRegular,
+                                    fontSize = 10.sp,
+                                    color = Yellow7E,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 11.sp
                                 )
                             }
                         }
-
-                        if (uiState is ConnectUiState.Error) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = (uiState as ConnectUiState.Error).message,
-                                style = SourceSansRegular,
-                                fontSize = 10.sp,
-                                color = Color.Red,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 12.sp
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Link "¿No tienes código? Busca psicólogos aquí"
-                        TextButton(
-                            onClick = { /* TODO: Navigate to search */ },
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.height(24.dp)
-                        ) {
-                            Text(
-                                text = "¿No tienes código? Busca psicólogos aquí",
-                                style = SourceSansRegular,
-                                fontSize = 10.sp,
-                                color = Yellow7E,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 11.sp
-                            )
-                        }
                     }
                 }
+
+                // Jirafa image overlapping the card
+                Image(
+                    painter = painterResource(id = R.drawable.jiraff_focus),
+                    contentDescription = "Jirafa",
+                    modifier = Modifier
+                        .size(250.dp)
+                        .align(Alignment.CenterStart)
+                        .offset(x = (-70).dp, y = (-20).dp)
+                )
             }
         }
     }

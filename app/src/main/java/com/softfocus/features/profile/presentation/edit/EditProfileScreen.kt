@@ -162,7 +162,7 @@ fun EditProfileScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Volver",
-                            tint = Color.Black
+                            tint = Green37
                         )
                     }
                 },
