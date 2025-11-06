@@ -19,8 +19,6 @@ Route(val path: String) {
 
     // Main app routes (for future implementation)
     data object Home : Route("home")
-    data object Profile : Route("profile")
-    data object EditProfile : Route("edit_profile")
     data object Tracking : Route("tracking")
     data object Crisis : Route("crisis")
 
@@ -34,6 +32,11 @@ Route(val path: String) {
     // AI routes
 
     data object Library : Route("library")
+
+    // General/Patient profile routes
+    data object GeneralProfile : Route("general_profile")
+    data object PatientProfile : Route("patient_profile")
+    data object EditProfile : Route("edit_profile")
 
     // Psychologist profile routes
     data object PsychologistProfile : Route("psychologist_profile")

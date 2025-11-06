@@ -4,10 +4,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,28 +46,13 @@ fun PsychologistProfileScreen(
     onNavigateToStats: () -> Unit,
     onNavigateToProfessionalData: () -> Unit,
     onNavigateBack: () -> Unit,
+    onLogout: () -> Unit = {},
     viewModel: PsychologistProfileViewModel = hiltViewModel()
 ) {
     val profile by viewModel.profile.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
-        },
         containerColor = Color.White
     ) { paddingValues ->
         when (uiState) {
@@ -99,6 +87,7 @@ fun PsychologistProfileScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
+                            .verticalScroll(rememberScrollState())
                             .padding(horizontal = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -132,12 +121,15 @@ fun PsychologistProfileScreen(
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // Name
+                                // Name - Ajusta automáticamente el tamaño
                                 Text(
                                     text = psychProfile.fullName,
-                                    style = CrimsonSemiBold,
-                                    fontSize = 28.sp,
-                                    color = Black
+                                    style = CrimsonSemiBold.copy(
+                                        fontSize = if (psychProfile.fullName.length > 20) 20.sp else 28.sp
+                                    ),
+                                    color = Black,
+                                    maxLines = 2,
+                                    lineHeight = 28.sp
                                 )
 
                                 // Age
@@ -158,18 +150,16 @@ fun PsychologistProfileScreen(
                                     text = psychProfile.email,
                                     style = CrimsonSemiBold,
                                     fontSize = 18.sp,
-                                    color = Black
+                                    color = Black,
+                                    maxLines = 1
                                 )
 
-                                // Badges (if verified)
+                                // Badges - Solo mostrar las 2 primeras especialidades del backend
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    if (psychProfile.isVerified) {
-                                        Badge(text = "Verificado")
-                                    }
-                                    Badge(text = "Psicólogo")
-                                    // Show first two specialties
+                                    // Show only first two specialties from backend
                                     psychProfile.specialties.take(2).forEach { specialty ->
                                         Badge(text = specialty)
                                     }
@@ -225,6 +215,16 @@ fun PsychologistProfileScreen(
                             text = "Datos profesionales",
                             onClick = onNavigateToProfessionalData
                         )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        MenuOption(
+                            icon = Icons.Outlined.Logout,
+                            text = "Cerrar Sesión",
+                            onClick = onLogout
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
@@ -416,32 +416,33 @@ fun PsychologistProfileScreenPreview() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Dr. Juan Pérez",
-                    style = CrimsonSemiBold,
-                    fontSize = 28.sp,
-                    color = Black
+                    text = "Dra. Patricia Sanchez",
+                    style = CrimsonSemiBold.copy(fontSize = 20.sp),
+                    color = Black,
+                    maxLines = 2,
+                    lineHeight = 28.sp
                 )
 
                 Text(
-                    text = "35 años",
+                    text = "40 años",
                     style = CrimsonSemiBold,
                     fontSize = 18.sp,
                     color = Black
                 )
 
                 Text(
-                    text = "drjuan@email.com",
+                    text = "psychologist1@test.com",
                     style = CrimsonSemiBold,
                     fontSize = 18.sp,
-                    color = Black
+                    color = Black,
+                    maxLines = 1
                 )
 
-                // Badges
+                // Badges - Solo 2 especialidades
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Badge(text = "Verificado")
-                    Badge(text = "Psicólogo")
                     Badge(text = "Ansiedad")
                     Badge(text = "Depresión")
                 }
@@ -496,6 +497,16 @@ fun PsychologistProfileScreenPreview() {
             text = "Datos profesionales",
             onClick = { }
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        MenuOption(
+            icon = Icons.Outlined.Logout,
+            text = "Cerrar Sesión",
+            onClick = { }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 

@@ -9,14 +9,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.compose.runtime.remember
 import com.softfocus.features.profile.presentation.psychologist.PsychologistProfileScreen
 import com.softfocus.features.profile.presentation.psychologist.EditPersonalInfoScreen
 import com.softfocus.features.profile.presentation.psychologist.ProfessionalDataScreen
+import com.softfocus.features.profile.presentation.psychologist.MyInvitationCodeScreen
+import com.softfocus.features.psychologist.presentation.di.PsychologistPresentationModule
+import com.softfocus.ui.components.navigation.PsychologistBottomNav
+import com.softfocus.core.utils.SessionManager
 
 
 /**
  * Psychologist navigation graph.
  * Contains routes specific to PSYCHOLOGIST users.
+ * - PsychologistProfile (main profile screen)
+ * - PsychologistEditProfile (edit personal information)
+ * - ProfessionalData (view professional data)
+ * - InvitationCode (view and share invitation code)
  */
 fun NavGraphBuilder.psychologistNavigation(
     navController: NavHostController,
@@ -31,29 +40,42 @@ fun NavGraphBuilder.psychologistNavigation(
 
     // Psychologist Profile Screen
     composable(Route.PsychologistProfile.path) {
-        PsychologistProfileScreen(
-            onNavigateToEditProfile = {
-                navController.navigate(Route.PsychologistEditProfile.path)
-            },
-            onNavigateToInvitationCode = {
-                navController.navigate(Route.InvitationCode.path)
-            },
-            onNavigateToNotifications = {
-                navController.navigate(Route.Notifications.path)
-            },
-            onNavigateToPlan = {
-                navController.navigate(Route.PsychologistPlan.path)
-            },
-            onNavigateToStats = {
-                navController.navigate(Route.PsychologistStats.path)
-            },
-            onNavigateToProfessionalData = {
-                navController.navigate(Route.ProfessionalData.path)
-            },
-            onNavigateBack = {
-                navController.popBackStack()
+        Scaffold(
+            containerColor = Color.Transparent,
+            bottomBar = { PsychologistBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                PsychologistProfileScreen(
+                    onNavigateToEditProfile = {
+                        navController.navigate(Route.PsychologistEditProfile.path)
+                    },
+                    onNavigateToInvitationCode = {
+                        navController.navigate(Route.InvitationCode.path)
+                    },
+                    onNavigateToNotifications = {
+                        navController.navigate(Route.Notifications.path)
+                    },
+                    onNavigateToPlan = {
+                        navController.navigate(Route.PsychologistPlan.path)
+                    },
+                    onNavigateToStats = {
+                        navController.navigate(Route.PsychologistStats.path)
+                    },
+                    onNavigateToProfessionalData = {
+                        navController.navigate(Route.ProfessionalData.path)
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onLogout = {
+                        SessionManager.logout(context)
+                        navController.navigate(Route.Login.path) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
             }
-        )
+        }
     }
 
     // Psychologist Edit Profile Screen
@@ -71,6 +93,20 @@ fun NavGraphBuilder.psychologistNavigation(
             onNavigateBack = {
                 navController.popBackStack()
             }
+        )
+    }
+
+
+    // Invitation Code Screen
+    composable(Route.InvitationCode.path) {
+        val psychologistHomeViewModel = remember {
+            PsychologistPresentationModule.getPsychologistHomeViewModel(context)
+        }
+        MyInvitationCodeScreen(
+            onNavigateBack = {
+                navController.popBackStack()
+            },
+            viewModel = psychologistHomeViewModel
         )
     }
 

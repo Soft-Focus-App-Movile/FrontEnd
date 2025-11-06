@@ -153,7 +153,8 @@ fun EditProfileScreen(
                     Text(
                         text = "Editar Perfil",
                         style = CrimsonSemiBold,
-                        fontSize = 20.sp
+                        fontSize = 20.sp,
+                        color = Green37,
                     )
                 },
                 navigationIcon = {
@@ -178,12 +179,12 @@ fun EditProfileScreen(
                 .padding(paddingValues)
                 .background(Color.White)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(horizontal = 48.dp, vertical = 24.dp)
         ) {
             // Profile Image with Camera Button
             Box(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(150.dp)
                     .align(Alignment.CenterHorizontally),
                 contentAlignment = Alignment.Center
             ) {
@@ -201,7 +202,7 @@ fun EditProfileScreen(
                                 bitmap = it.asImageBitmap(),
                                 contentDescription = "Foto de perfil",
                                 modifier = Modifier
-                                    .size(100.dp)
+                                    .size(150.dp)
                                     .clip(CircleShape)
                                     .clickable { imagePickerLauncher.launch("image/*") },
                                 contentScale = ContentScale.Crop
@@ -212,14 +213,15 @@ fun EditProfileScreen(
                     user?.profileImageUrl != null -> {
                         ProfileImageFromUrl(
                             imageUrl = user?.profileImageUrl!!,
-                            onClick = { imagePickerLauncher.launch("image/*") }
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            size = 150.dp
                         )
                     }
                     // Placeholder si no hay imagen
                     else -> {
                         Box(
                             modifier = Modifier
-                                .size(100.dp)
+                                .size(150.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFFC5D9A4))
                                 .clickable { imagePickerLauncher.launch("image/*") }
@@ -230,7 +232,7 @@ fun EditProfileScreen(
                 // Camera icon button
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(40.dp)
                         .align(Alignment.BottomEnd)
                         .clip(CircleShape)
                         .background(Green29)
@@ -241,7 +243,7 @@ fun EditProfileScreen(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "Cambiar foto",
                         tint = Color.White,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -677,7 +679,8 @@ fun ChipSelectionField(
 @Composable
 fun ProfileImageFromUrl(
     imageUrl: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    size: androidx.compose.ui.unit.Dp = 100.dp
 ) {
     val context = LocalContext.current
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
@@ -698,14 +701,14 @@ fun ProfileImageFromUrl(
             bitmap = it.asImageBitmap(),
             contentDescription = "Foto de perfil",
             modifier = Modifier
-                .size(100.dp)
+                .size(size)
                 .clip(CircleShape)
                 .clickable(onClick = onClick),
             contentScale = ContentScale.Crop
         )
     } ?: Box(
         modifier = Modifier
-            .size(100.dp)
+            .size(size)
             .clip(CircleShape)
             .background(Color(0xFFC5D9A4))
             .clickable(onClick = onClick)
@@ -724,13 +727,13 @@ fun EditProfileScreenPreview() {
         // Profile Image with Camera Button
         Box(
             modifier = Modifier
-                .size(100.dp)
+                .size(150.dp)
                 .align(Alignment.CenterHorizontally),
             contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(150.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFC5D9A4))
             )

@@ -97,6 +97,56 @@ class ProfileViewModel @Inject constructor(
                 }
         }
     }
+
+    fun updateProfessionalProfile(
+        professionalBio: String?,
+        isAcceptingNewPatients: Boolean?,
+        maxPatientsCapacity: Int?,
+        targetAudience: List<String>?,
+        languages: List<String>?,
+        businessName: String?,
+        businessAddress: String?,
+        bankAccount: String?,
+        paymentMethods: String?,
+        isProfileVisibleInDirectory: Boolean?,
+        allowsDirectMessages: Boolean?
+    ) {
+        viewModelScope.launch {
+            android.util.Log.d("ProfileViewModel", "updateProfessionalProfile called")
+            android.util.Log.d("ProfileViewModel", "Bio: $professionalBio, Languages: $languages, TargetAudience: $targetAudience")
+
+            _uiState.value = ProfileUiState.Loading
+
+            val result = profileRepository.updateProfessionalProfile(
+                professionalBio = professionalBio,
+                isAcceptingNewPatients = isAcceptingNewPatients,
+                maxPatientsCapacity = maxPatientsCapacity,
+                targetAudience = targetAudience,
+                languages = languages,
+                businessName = businessName,
+                businessAddress = businessAddress,
+                bankAccount = bankAccount,
+                paymentMethods = paymentMethods,
+                isProfileVisibleInDirectory = isProfileVisibleInDirectory,
+                allowsDirectMessages = allowsDirectMessages
+            )
+
+            android.util.Log.d("ProfileViewModel", "Result: ${result.isSuccess}, ${result.isFailure}")
+
+            result.onSuccess {
+                    android.util.Log.d("ProfileViewModel", "Professional profile updated successfully")
+                    // Reload profile to get updated data
+                    loadProfile()
+                    _uiState.value = ProfileUiState.UpdateSuccess
+                }
+                .onFailure { error ->
+                    android.util.Log.e("ProfileViewModel", "Error updating professional profile", error)
+                    _uiState.value = ProfileUiState.Error(
+                        error.message ?: "Error al actualizar perfil profesional"
+                    )
+                }
+        }
+    }
 }
 
 sealed class ProfileUiState {

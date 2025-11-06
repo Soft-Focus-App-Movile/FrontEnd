@@ -142,4 +142,48 @@ class ProfileRepositoryImpl @Inject constructor(
         }
         return fileName
     }
+
+    override suspend fun updateProfessionalProfile(
+        professionalBio: String?,
+        isAcceptingNewPatients: Boolean?,
+        maxPatientsCapacity: Int?,
+        targetAudience: List<String>?,
+        languages: List<String>?,
+        businessName: String?,
+        businessAddress: String?,
+        bankAccount: String?,
+        paymentMethods: String?,
+        isProfileVisibleInDirectory: Boolean?,
+        allowsDirectMessages: Boolean?
+    ): Result<com.softfocus.features.profile.domain.models.PsychologistProfile> {
+        return try {
+            android.util.Log.d("ProfileRepository", "updateProfessionalProfile called")
+            val professionalData = mutableMapOf<String, Any?>()
+
+            professionalBio?.let { professionalData["professionalBio"] = it }
+            isAcceptingNewPatients?.let { professionalData["isAcceptingNewPatients"] = it }
+            maxPatientsCapacity?.let { professionalData["maxPatientsCapacity"] = it }
+            targetAudience?.let { professionalData["targetAudience"] = it }
+            languages?.let { professionalData["languages"] = it }
+            businessName?.let { professionalData["businessName"] = it }
+            businessAddress?.let { professionalData["businessAddress"] = it }
+            bankAccount?.let { professionalData["bankAccount"] = it }
+            paymentMethods?.let { professionalData["paymentMethods"] = it }
+            isProfileVisibleInDirectory?.let { professionalData["isProfileVisibleInDirectory"] = it }
+            allowsDirectMessages?.let { professionalData["allowsDirectMessages"] = it }
+
+            android.util.Log.d("ProfileRepository", "Professional data to send: $professionalData")
+            val response = profileService.updateProfessionalProfile(professionalData)
+            android.util.Log.d("ProfileRepository", "Response code: ${response.code()}, isSuccessful: ${response.isSuccessful}")
+
+            if (response.isSuccessful && response.body() != null) {
+                val psychologistProfile = response.body()!!.toDomain()
+                Result.success(psychologistProfile)
+            } else {
+                Result.failure(Exception("Error al actualizar perfil profesional: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

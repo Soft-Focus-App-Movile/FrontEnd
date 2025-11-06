@@ -35,14 +35,16 @@ fun ProfessionalDataScreen(
                     Text(
                         text = "Datos profesionales",
                         style = CrimsonSemiBold,
-                        color = Green37
+                        color = Green37,
+                        fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = "Volver",
+                            tint = Green37
                         )
                     }
                 },

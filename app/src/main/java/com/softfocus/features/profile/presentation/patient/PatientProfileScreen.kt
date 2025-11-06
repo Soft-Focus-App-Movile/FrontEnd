@@ -54,6 +54,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PatientProfileScreen(
+    onNavigateToConnect: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit = {},
@@ -171,7 +172,7 @@ fun PatientProfileScreen(
             CurrentTherapistCard(
                 therapistName = "Dra. Herrera",
                 therapistImageUrl = null,
-                onUnlinkClick = { /* TODO: Implement unlink */ }
+                onUnlinkClick = onNavigateToConnect
             )
 
             Spacer(modifier = Modifier.height(24.dp))

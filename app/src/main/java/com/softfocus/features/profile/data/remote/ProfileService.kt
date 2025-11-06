@@ -34,4 +34,10 @@ interface ProfileService {
         @Part("IsProfilePublic") isProfilePublic: RequestBody?,
         @Part profileImage: MultipartBody.Part?
     ): Response<ProfileResponseDto>
+
+    @Headers("Content-Type: application/json")
+    @PUT(ApiConstants.Users.PSYCHOLOGIST_PROFESSIONAL_DATA)
+    suspend fun updateProfessionalProfile(
+        @Body professionalData: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<PsychologistCompleteProfileResponseDto>
 }

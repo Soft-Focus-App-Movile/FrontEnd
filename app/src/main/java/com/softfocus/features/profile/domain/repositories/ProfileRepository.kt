@@ -23,4 +23,17 @@ interface ProfileRepository {
         isProfilePublic: Boolean?,
         profileImageUri: Uri?
     ): Result<User>
+    suspend fun updateProfessionalProfile(
+        professionalBio: String?,
+        isAcceptingNewPatients: Boolean?,
+        maxPatientsCapacity: Int?,
+        targetAudience: List<String>?,
+        languages: List<String>?,
+        businessName: String?,
+        businessAddress: String?,
+        bankAccount: String?,
+        paymentMethods: String?,
+        isProfileVisibleInDirectory: Boolean?,
+        allowsDirectMessages: Boolean?
+    ): Result<PsychologistProfile>
 }

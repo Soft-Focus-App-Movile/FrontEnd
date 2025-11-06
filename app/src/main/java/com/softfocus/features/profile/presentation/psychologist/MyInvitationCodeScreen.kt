@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.softfocus.features.home.presentation.psychologist.PsychologistHomeViewModel
 import com.softfocus.ui.components.InvitationCard
@@ -33,14 +34,16 @@ fun MyInvitationCodeScreen(
                     Text(
                         text = "Mi código de invitación",
                         style = CrimsonSemiBold,
-                        color = Green37
+                        color = Green37,
+                        fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = "Volver",
+                            tint = Green37
                         )
                     }
                 },
