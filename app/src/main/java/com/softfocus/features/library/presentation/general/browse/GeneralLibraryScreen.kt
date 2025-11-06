@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -250,7 +251,9 @@ fun GeneralLibraryScreenContent(
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.padding(32.dp)
+                            modifier = Modifier
+                                .padding(32.dp)
+                                .fillMaxWidth()
                         ) {
                             Text(
                                 text = "Error",
@@ -262,7 +265,8 @@ fun GeneralLibraryScreenContent(
                                 text = uiState.message,
                                 style = SourceSansRegular.copy(fontSize = 14.sp),
                                 color = Gray828,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(

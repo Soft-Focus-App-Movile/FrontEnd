@@ -9,12 +9,12 @@ package com.softfocus.features.library.domain.models
  * @property Calm Contenido tranquilo, pacífico, relajante
  * @property Energetic Contenido energético, motivador, activo
  */
-enum class EmotionalTag(val displayName: String, val emoji: String) {
-    Happy("Alegre", "😊"),
-    Sad("Triste", "😢"),
-    Anxious("Ansioso", "😰"),
-    Calm("Tranquilo", "😌"),
-    Energetic("Energético", "⚡");
+enum class EmotionalTag(val displayName: String) {
+    Happy("Alegre"),
+    Sad("Triste"),
+    Anxious("Ansioso"),
+    Calm("Tranquilo"),
+    Energetic("Energético");
 
     companion object {
         /**

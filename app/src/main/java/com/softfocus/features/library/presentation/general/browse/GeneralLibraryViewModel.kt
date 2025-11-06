@@ -176,6 +176,7 @@ class GeneralLibraryViewModel(
 
     fun searchContent(query: String) {
         if (query.isBlank()) {
+            Log.d(TAG, "searchContent: Query vacío, recargando contenido")
             if (_selectedEmotion.value != null) {
                 loadContentByEmotion(_selectedEmotion.value!!)
             } else {
@@ -185,6 +186,7 @@ class GeneralLibraryViewModel(
         }
 
         viewModelScope.launch {
+            Log.d(TAG, "searchContent: Buscando '$query' en tipo ${_selectedType.value}")
             _uiState.value = GeneralLibraryUiState.Loading
 
             try {
@@ -194,17 +196,20 @@ class GeneralLibraryViewModel(
                     emotionFilter = _selectedEmotion.value,
                     limit = 20
                 ).onSuccess { results ->
+                    Log.d(TAG, "searchContent: ✅ Encontrados ${results.size} resultados")
                     val contentMap = mapOf(_selectedType.value to results)
                     _uiState.value = GeneralLibraryUiState.Success(
                         contentByType = contentMap,
                         selectedType = _selectedType.value
                     )
                 }.onFailure { error ->
+                    Log.e(TAG, "searchContent: ❌ Error: ${error.message}", error)
                     _uiState.value = GeneralLibraryUiState.Error(
                         error.message ?: "Error en la búsqueda"
                     )
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "searchContent: ❌ Excepción: ${e.message}", e)
                 _uiState.value = GeneralLibraryUiState.Error(
                     e.message ?: "Error en la búsqueda"
                 )
