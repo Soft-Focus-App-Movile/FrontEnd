@@ -2,6 +2,10 @@ package com.softfocus.core.networking.di
 
 import com.softfocus.core.data.local.UserSession
 import com.softfocus.core.networking.ApiConstants
+import com.softfocus.features.library.data.remote.AssignmentsService
+import com.softfocus.features.library.data.remote.ContentSearchService
+import com.softfocus.features.library.data.remote.FavoritesService
+import com.softfocus.features.library.data.remote.RecommendationsService
 import com.softfocus.features.notifications.data.remote.NotificationService
 import dagger.Module
 import dagger.Provides
@@ -73,5 +77,33 @@ object NetworkModule {
     @Singleton
     fun provideNotificationService(retrofit: Retrofit): NotificationService {
         return retrofit.create(NotificationService::class.java)
+    }
+
+    // ============================================================
+    // LIBRARY SERVICES
+    // ============================================================
+
+    @Provides
+    @Singleton
+    fun provideContentSearchService(retrofit: Retrofit): ContentSearchService {
+        return retrofit.create(ContentSearchService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFavoritesService(retrofit: Retrofit): FavoritesService {
+        return retrofit.create(FavoritesService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAssignmentsService(retrofit: Retrofit): AssignmentsService {
+        return retrofit.create(AssignmentsService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRecommendationsService(retrofit: Retrofit): RecommendationsService {
+        return retrofit.create(RecommendationsService::class.java)
     }
 }

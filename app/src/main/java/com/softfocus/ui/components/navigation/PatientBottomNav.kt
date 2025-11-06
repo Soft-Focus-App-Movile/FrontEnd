@@ -172,7 +172,7 @@ fun PatientBottomNav(navController: NavController) {
             },
             label = { Text("Biblioteca", fontSize = 12.sp, style = SourceSansRegular) },
             selected = false,
-            onClick = { /* No implementado aún */ },
+            onClick = { /* TODO: Implementar para Patient */ },
             enabled = false,
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Green29,

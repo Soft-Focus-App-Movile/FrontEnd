@@ -81,4 +81,36 @@ object ApiConstants {
         const val BASE = "preferences"
         const val RESET = "preferences/reset"
     }
+
+    // Library endpoints
+    object Library {
+        const val BASE = "library"
+
+        // Content Search endpoints
+        const val SEARCH = "library/search"
+        const val CONTENT_BY_ID = "library/{contentId}"
+
+        // Favorites endpoints (General and Patient only)
+        const val FAVORITES = "library/favorites"
+        const val FAVORITE_BY_ID = "library/favorites/{favoriteId}"
+
+        // Assignment endpoints - Patient side
+        const val ASSIGNED_CONTENT = "library/assignments/assigned"
+        const val COMPLETE_ASSIGNMENT = "library/assignments/assigned/{assignmentId}/complete"
+
+        // Assignment endpoints - Psychologist side
+        const val ASSIGNMENTS = "library/assignments"
+        const val PSYCHOLOGIST_ASSIGNMENTS = "library/assignments/by-psychologist"
+
+        // Recommendation endpoints
+        const val RECOMMEND_PLACES = "library/recommendations/places"
+        const val RECOMMEND_CONTENT = "library/recommendations/content"
+        const val RECOMMEND_BY_EMOTION = "library/recommendations/emotion/{emotion}"
+
+        // Helper functions for dynamic parameters
+        fun getContentById(contentId: String) = CONTENT_BY_ID.replace("{contentId}", contentId)
+        fun deleteFavorite(favoriteId: String) = FAVORITE_BY_ID.replace("{favoriteId}", favoriteId)
+        fun completeAssignment(assignmentId: String) = COMPLETE_ASSIGNMENT.replace("{assignmentId}", assignmentId)
+        fun recommendByEmotion(emotion: String) = RECOMMEND_BY_EMOTION.replace("{emotion}", emotion)
+    }
 }

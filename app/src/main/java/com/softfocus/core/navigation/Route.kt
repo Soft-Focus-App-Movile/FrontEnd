@@ -22,7 +22,14 @@ Route(val path: String) {
     data object Profile : Route("profile")
     data object Tracking : Route("tracking")
     data object Crisis : Route("crisis")
-    data object Library : Route("library")
+
+    // Library routes - General
+    data object LibraryGeneralBrowse : Route("library_general_browse")
+    data object LibraryGeneralDetail : Route("library_general_detail/{contentId}") {
+        fun createRoute(contentId: String): String = "library_general_detail/$contentId"
+    }
+
+    // AI routes
     data object AIWelcome : Route("ai_welcome")
     data object AIChat : Route("ai_chat_screen/{initialMessage}?sessionId={sessionId}") {
         fun createRoute(initialMessage: String? = null, sessionId: String? = null): String {

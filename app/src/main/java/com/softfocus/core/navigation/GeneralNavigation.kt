@@ -74,6 +74,92 @@ fun NavGraphBuilder.generalNavigation(
         }
     }
 
+    // Library Detail Screen for General users
+    composable(
+        route = Route.LibraryGeneralDetail.path,
+        arguments = listOf(
+            androidx.navigation.navArgument("contentId") {
+                type = androidx.navigation.NavType.StringType
+            }
+        )
+    ) { backStackEntry ->
+        val contentId = backStackEntry.arguments?.getString("contentId") ?: ""
+        val homeViewModel = remember { TherapyPresentationModule.getHomeViewModel(context) }
+        val isPatient = homeViewModel.isPatient.collectAsState()
+        val isLoading = homeViewModel.isLoading.collectAsState()
+
+        if (isLoading.value) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF6B8E6F))
+            }
+        } else {
+            Scaffold(
+                containerColor = Color.Transparent,
+                bottomBar = {
+                    if (isPatient.value) {
+                        PatientBottomNav(navController)
+                    } else {
+                        GeneralBottomNav(navController)
+                    }
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier.padding(paddingValues)
+                ) {
+                    com.softfocus.features.library.presentation.general.detail.ContentDetailScreen(
+                        contentId = contentId,
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        },
+                        onRelatedContentClick = { content ->
+                            navController.navigate(Route.LibraryGeneralDetail.createRoute(content.id))
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // Library Browse Screen for General users
+    composable(Route.LibraryGeneralBrowse.path) {
+        val homeViewModel = remember { TherapyPresentationModule.getHomeViewModel(context) }
+        val isPatient = homeViewModel.isPatient.collectAsState()
+        val isLoading = homeViewModel.isLoading.collectAsState()
+
+        if (isLoading.value) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF6B8E6F))
+            }
+        } else {
+            Scaffold(
+                containerColor = Color.Transparent,
+                bottomBar = {
+                    if (isPatient.value) {
+                        PatientBottomNav(navController)
+                    } else {
+                        GeneralBottomNav(navController)
+                    }
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier.padding(paddingValues)
+                ) {
+                    com.softfocus.features.library.presentation.general.browse.GeneralLibraryScreen(
+                        onContentClick = { content ->
+                            navController.navigate(Route.LibraryGeneralDetail.createRoute(content.id))
+                        }
+                    )
+                }
+            }
+        }
+    }
+
     // Future general-specific routes can be added here
     // Example:
     // composable(Route.GeneralDashboard.path) { ... }
