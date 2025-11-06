@@ -12,9 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.softfocus.ui.theme.CrimsonBold
-import com.softfocus.ui.theme.Gray828
-import com.softfocus.ui.theme.SourceSansRegular
+import com.softfocus.ui.theme.SourceSansSemiBold
 
 /**
  * Header con información del contenido (título, año, rating, duración)
@@ -41,8 +39,8 @@ fun ContentInfoHeader(
         // Título
         Text(
             text = title,
-            style = CrimsonBold.copy(fontSize = 24.sp),
-            color = Color.Black,
+            style = SourceSansSemiBold.copy(fontSize = 24.sp),
+            color = Color.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -58,8 +56,8 @@ fun ContentInfoHeader(
             year?.let {
                 Text(
                     text = it,
-                    style = SourceSansRegular.copy(fontSize = 14.sp),
-                    color = Gray828
+                    style = SourceSansSemiBold.copy(fontSize = 14.sp),
+                    color = Color.White
                 )
             }
 
@@ -77,8 +75,8 @@ fun ContentInfoHeader(
                     )
                     Text(
                         text = String.format("%.1f/10", it),
-                        style = SourceSansRegular.copy(fontSize = 14.sp),
-                        color = Gray828
+                        style = SourceSansSemiBold.copy(fontSize = 14.sp),
+                        color = Color.White
                     )
                 }
             }
@@ -87,8 +85,8 @@ fun ContentInfoHeader(
             duration?.let {
                 Text(
                     text = it,
-                    style = SourceSansRegular.copy(fontSize = 14.sp),
-                    color = Gray828
+                    style = SourceSansSemiBold.copy(fontSize = 14.sp),
+                    color = Color.White
                 )
             }
         }

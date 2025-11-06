@@ -36,6 +36,9 @@ data class ContentItemResponseDto(
     @SerializedName("duration")
     val duration: String? = null,
 
+    @SerializedName("releaseDate")
+    val releaseDate: String? = null,
+
     @SerializedName("genres")
     val genres: List<String>? = null,
 
@@ -91,6 +94,18 @@ data class ContentItemResponseDto(
     val photoUrl: String? = null
 ) {
     /**
+     * Parsea la duración desde el formato del backend
+     * Ejemplos: "148min" -> 148, "2 temporadas" -> 2
+     */
+    private fun parseDuration(durationString: String?): Int? {
+        if (durationString.isNullOrBlank()) return null
+
+        // Extraer el primer número de la cadena
+        val numberMatch = Regex("\\d+").find(durationString)
+        return numberMatch?.value?.toIntOrNull()
+    }
+
+    /**
      * Mapea el DTO a la entidad de dominio
      */
     fun toDomain(): ContentItem {
@@ -103,7 +118,8 @@ data class ContentItemResponseDto(
             posterUrl = posterUrl,
             backdropUrl = backdropUrl,
             rating = rating?.toDoubleOrNull(),
-            duration = duration?.toIntOrNull(),
+            duration = parseDuration(duration),
+            releaseDate = releaseDate,
             genres = genres ?: emptyList(),
             trailerUrl = trailerUrl,
             emotionalTags = emotionalTags?.mapNotNull { tag ->

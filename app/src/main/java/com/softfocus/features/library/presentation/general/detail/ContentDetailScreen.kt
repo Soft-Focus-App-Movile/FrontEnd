@@ -81,7 +81,7 @@ fun ContentDetailScreen(
                 // Header con información principal
                 ContentInfoHeader(
                     title = content.title,
-                    year = content.externalId.substringAfterLast("-").take(4), // Extraer año del ID si está disponible
+                    year = content.getReleaseYear(),
                     rating = content.rating,
                     duration = content.getFormattedDuration()
                 )

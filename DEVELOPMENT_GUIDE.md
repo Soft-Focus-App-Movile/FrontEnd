@@ -759,7 +759,7 @@ features/notifications/
 
 1. Laura Gomez
    - Email: patient1@test.com                                                                                                                                                                                                      
-   - Password: Patient123!
+   - Password: veo
 2. Carlos Martinez
    - Email: patient2@test.com                                                                                                                                                                                                      
    - Password: Patient123!

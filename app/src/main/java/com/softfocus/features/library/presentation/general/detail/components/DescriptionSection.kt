@@ -7,10 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.softfocus.ui.theme.CrimsonBold
-import com.softfocus.ui.theme.Gray828
-import com.softfocus.ui.theme.Green29
-import com.softfocus.ui.theme.SourceSansRegular
+import com.softfocus.ui.theme.SourceSansLight
+import com.softfocus.ui.theme.SourceSansSemiBold
 
 /**
  * Sección de descripción del contenido
@@ -32,8 +30,8 @@ fun DescriptionSection(
             // Título de la sección
             Text(
                 text = "Descripción",
-                style = CrimsonBold.copy(fontSize = 18.sp),
-                color = Green29
+                style = SourceSansSemiBold.copy(fontSize = 15.sp),
+                color = Color.White
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -41,9 +39,9 @@ fun DescriptionSection(
             // Descripción
             Text(
                 text = description,
-                style = SourceSansRegular.copy(fontSize = 14.sp),
-                color = Gray828,
-                lineHeight = 20.sp
+                style = SourceSansLight.copy(fontSize = 14.sp),
+                color = Color.White,
+                lineHeight = 22.sp
             )
         }
     }

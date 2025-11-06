@@ -46,6 +46,7 @@ data class ContentItem(
     val backdropUrl: String? = null,
     val rating: Double? = null,
     val duration: Int? = null,
+    val releaseDate: String? = null,
     val genres: List<String> = emptyList(),
     val trailerUrl: String? = null,
     val emotionalTags: List<EmotionalTag> = emptyList(),
@@ -117,5 +118,15 @@ data class ContentItem(
      */
     fun getFormattedRating(): String? = rating?.let {
         String.format("%.1f/10", it)
+    }
+
+    /**
+     * Obtiene el año de la fecha de lanzamiento
+     * Soporta formatos: "2010-07-16", "2010", etc.
+     */
+    fun getReleaseYear(): String? = releaseDate?.let {
+        // Extraer los primeros 4 caracteres si es una fecha completa (YYYY-MM-DD)
+        // o devolver tal cual si ya es un año (YYYY)
+        if (it.length >= 4) it.substring(0, 4) else null
     }
 }

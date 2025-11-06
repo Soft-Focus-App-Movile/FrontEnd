@@ -50,14 +50,14 @@ fun ContentCard(
 ) {
     Column(
         modifier = modifier
-            .width(129.dp)
+            .width(160.dp)
             .clickable(onClick = onClick)
     ) {
         // 1. Imagen con botón de favorito
         Box(
             modifier = Modifier
-                .width(129.dp)
-                .height(134.dp)
+                .width(160.dp)
+                .height(180.dp)
         ) {
             // Imagen del contenido
             AsyncImage(
@@ -95,11 +95,11 @@ fun ContentCard(
             // Título
             Text(
                 text = content.title,
-                style = SourceSansRegular.copy(fontSize = 16.sp),
+                style = CrimsonBold.copy(fontSize = 13.sp),
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = 16.sp
+                lineHeight = 18.sp
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -108,19 +108,18 @@ fun ContentCard(
             content.getFormattedDuration()?.let { duration ->
                 Text(
                     text = "Duración  $duration",
-                    style = SourceSansLight.copy(fontSize = 14.sp),
+                    style = SourceSansRegular.copy(fontSize = 11.sp),
                     color = Color.White.copy(alpha = 0.7f)
                 )
+                Spacer(modifier = Modifier.height(6.dp))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Tags emocionales
+            // Tags emocionales (solo 1 tag)
             if (content.emotionalTags.isNotEmpty()) {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(content.emotionalTags.take(2)) { tag ->
+                    items(content.emotionalTags.take(1)) { tag ->
                         AssistChip(
                             onClick = { },
                             label = {

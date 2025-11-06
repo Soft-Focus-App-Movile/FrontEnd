@@ -36,11 +36,24 @@ class ContentDetailViewModel(
             repository.getContentById(contentId)
                 .onSuccess { content ->
                     val relatedContent = mutableListOf<ContentItem>()
-                    repository.getRecommendedContent(
-                        contentType = content.type,
-                        limit = 10
-                    ).onSuccess { related ->
-                        relatedContent.addAll(related.filter { it.externalId != content.externalId })
+
+                    // Si el contenido tiene emotional tags, usar el primero para filtrar relacionados
+                    if (content.emotionalTags.isNotEmpty()) {
+                        repository.getRecommendedByEmotion(
+                            emotion = content.emotionalTags.first(),
+                            contentType = content.type,
+                            limit = 10
+                        ).onSuccess { related ->
+                            relatedContent.addAll(related.filter { it.externalId != content.externalId })
+                        }
+                    } else {
+                        // Si no tiene tags emocionales, usar recomendaciones generales
+                        repository.getRecommendedContent(
+                            contentType = content.type,
+                            limit = 10
+                        ).onSuccess { related ->
+                            relatedContent.addAll(related.filter { it.externalId != content.externalId })
+                        }
                     }
 
                     var isFavorite = false
