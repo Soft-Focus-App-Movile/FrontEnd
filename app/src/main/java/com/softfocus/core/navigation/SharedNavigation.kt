@@ -149,6 +149,9 @@ fun NavGraphBuilder.sharedNavigation(
                         onNavigateBack = {
                             navController.popBackStack()
                         },
+                        onNavigateToEditProfile = {
+                            navController.navigate(Route.EditProfile.path)
+                        },
                         onLogout = {
                             SessionManager.logout(context)
                             navController.navigate(Route.Login.path) {
@@ -159,6 +162,15 @@ fun NavGraphBuilder.sharedNavigation(
                 }
             }
         }
+    }
+
+    // Edit Profile Screen
+    composable(Route.EditProfile.path) {
+        com.softfocus.features.profile.presentation.edit.EditProfileScreen(
+            onNavigateBack = {
+                navController.popBackStack()
+            }
+        )
     }
 
     // Notifications Screen

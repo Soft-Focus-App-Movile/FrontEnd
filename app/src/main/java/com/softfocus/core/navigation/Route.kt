@@ -20,8 +20,10 @@ Route(val path: String) {
     // Main app routes (for future implementation)
     data object Home : Route("home")
     data object Profile : Route("profile")
+    data object EditProfile : Route("edit_profile")
     data object Tracking : Route("tracking")
     data object Crisis : Route("crisis")
+
 
     // Library routes - General
     data object LibraryGeneralBrowse : Route("library_general_browse")
@@ -30,6 +32,17 @@ Route(val path: String) {
     }
 
     // AI routes
+
+    data object Library : Route("library")
+
+    // Psychologist profile routes
+    data object PsychologistProfile : Route("psychologist_profile")
+    data object PsychologistEditProfile : Route("psychologist_edit_profile")
+    data object ProfessionalData : Route("professional_data")
+    data object InvitationCode : Route("invitation_code")
+    data object PsychologistPlan : Route("psychologist_plan")
+    data object PsychologistStats : Route("psychologist_stats")
+
     data object AIWelcome : Route("ai_welcome")
     data object AIChat : Route("ai_chat_screen/{initialMessage}?sessionId={sessionId}") {
         fun createRoute(initialMessage: String? = null, sessionId: String? = null): String {
