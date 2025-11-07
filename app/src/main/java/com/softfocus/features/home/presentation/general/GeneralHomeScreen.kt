@@ -1,6 +1,8 @@
 package com.softfocus.features.home.presentation.general
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -28,6 +30,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,7 +39,10 @@ import androidx.compose.ui.unit.sp
 import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Gray828
 import com.softfocus.ui.theme.Green49
+import com.softfocus.ui.theme.Green65
+import com.softfocus.ui.theme.GreenEC
 import com.softfocus.ui.theme.SourceSansRegular
+import com.softfocus.ui.theme.YellowCB9D
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.runtime.collectAsState
@@ -44,7 +50,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.softfocus.features.notifications.presentation.list.NotificationsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun GeneralHomeScreen(
     onNavigateToNotifications: () -> Unit = {}
@@ -200,65 +205,75 @@ fun GeneralHomeScreen(
                 text = "Hola $userName ,",
                 style = CrimsonSemiBold,
                 fontSize = 24.sp,
-                color = Gray828,
+                color = Green65,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Text(
                 text = "¿Cómo te sientes hoy?",
                 style = CrimsonSemiBold,
                 fontSize = 24.sp,
-                color = Gray828,
+                color = Green65,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .padding(horizontal = 16.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = GreenEC),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Registra tu estado de ánimo",
-                            style = SourceSansRegular,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Gray828
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = { },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFC5D9A4)
-                            ),
-                            shape = RoundedCornerShape(8.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .padding(end = 80.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Registrar ahora",
-                                style = SourceSansRegular,
-                                fontSize = 14.sp,
+                                text = "Registra tu estado de ánimo",
+                                style = CrimsonSemiBold,
+                                fontSize = 16.sp,
                                 color = Color.Black
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = { },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = YellowCB9D
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = "Registrar ahora",
+                                    style = SourceSansRegular,
+                                    fontSize = 14.sp,
+                                    color = Color.Black
+                                )
+                            }
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF5F5F5))
-                    )
                 }
+
+                // Koala image overlapping the card
+                Image(
+                    painter = painterResource(id = R.drawable.koala_focus),
+                    contentDescription = "Koala",
+                    modifier = Modifier
+                        .size(150.dp)
+                        .align(Alignment.CenterEnd)
+                        .offset(x = 35.dp, y = (-30).dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -454,3 +469,85 @@ val mockRecommendations = listOf(
     Recommendation("Escuchar", "Música Acústica"),
     Recommendation("Meditar", "Prana")
 )
+
+@Preview(showBackground = true)
+@Composable
+fun GeneralHomeScreenPreview() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(16.dp)
+    ) {
+        // Saludo
+        Text(
+            text = "Hola Laura ,",
+            style = CrimsonSemiBold,
+            fontSize = 24.sp,
+            color = Green65
+        )
+        Text(
+            text = "¿Cómo te sientes hoy?",
+            style = CrimsonSemiBold,
+            fontSize = 24.sp,
+            color = Green65
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Card de registro de ánimo
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = GreenEC),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)
+                        .padding(end = 30.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Registra tu estado de ánimo",
+                            style = CrimsonSemiBold,
+                            fontSize = 16.sp,
+                            color = Color.Black
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = YellowCB9D
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = "Registrar ahora",
+                                style = SourceSansRegular,
+                                fontSize = 14.sp,
+                                color = Color.Black
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Koala image overlapping the card
+            Image(
+                painter = painterResource(id = R.drawable.koala_focus),
+                contentDescription = "Koala",
+                modifier = Modifier
+                    .size(150.dp)
+                    .align(Alignment.CenterEnd)
+                    .offset(x = 35.dp, y = (-30).dp)
+            )
+        }
+    }
+}
