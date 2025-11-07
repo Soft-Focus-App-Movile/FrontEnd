@@ -25,6 +25,10 @@ object NotificationPresentationModule {
         authToken = token
     }
 
+    fun clearAuthToken() {
+        authToken = ""
+    }
+
     private fun provideOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY

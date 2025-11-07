@@ -34,23 +34,34 @@ fun SplashScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        // Initialize TherapyPresentationModule with context for 401 interceptor
+        TherapyPresentationModule.init(context)
+
         delay(2500) // 2.5 seconds
 
         // Check if there's an active session
         val isAuthenticated = SessionManager.hasActiveSession(context)
 
         if (isAuthenticated) {
-            // Re-initialize auth tokens for the logged-in user
-            val user = SessionManager.getCurrentUser(context)
-            user?.token?.let { token ->
-                TherapyPresentationModule.setAuthToken(token)
-                when (user.userType) {
-                    UserType.ADMIN -> AdminPresentationModule.setAuthToken(token)
-                    UserType.PSYCHOLOGIST -> PsychologistPresentationModule.setAuthToken(token)
-                    else -> {} // GENERAL and PATIENT only need TherapyModule
+            // Check if token has expired
+            val userSession = com.softfocus.core.data.local.UserSession(context)
+            if (userSession.isTokenExpired()) {
+                // Token expired - clear all data and go to login
+                SessionManager.logout(context)
+                onNavigateToLogin()
+            } else {
+                // Token still valid - restore session
+                val user = SessionManager.getCurrentUser(context)
+                user?.token?.let { token ->
+                    TherapyPresentationModule.setAuthToken(token)
+                    when (user.userType) {
+                        UserType.ADMIN -> AdminPresentationModule.setAuthToken(token)
+                        UserType.PSYCHOLOGIST -> PsychologistPresentationModule.setAuthToken(token)
+                        else -> {} // GENERAL and PATIENT only need TherapyModule
+                    }
                 }
+                onNavigateToHome()
             }
-            onNavigateToHome()
         } else {
             onNavigateToLogin()
         }

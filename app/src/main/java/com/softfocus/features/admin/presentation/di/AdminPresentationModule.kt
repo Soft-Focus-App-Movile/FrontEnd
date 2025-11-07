@@ -22,6 +22,10 @@ object AdminPresentationModule {
         authToken = token
     }
 
+    fun clearAuthToken() {
+        authToken = null
+    }
+
     private fun getAdminService(): AdminService {
         return getRetrofit().create(AdminService::class.java)
     }

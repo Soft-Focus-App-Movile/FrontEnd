@@ -32,7 +32,7 @@ fun NavGraphBuilder.authNavigation(
                 }
             },
             onNavigateToHome = {
-                navController.navigate(Route.Login.path) {
+                navController.navigate(Route.Home.path) {
                     popUpTo(Route.Splash.path) { inclusive = true }
                 }
             }
