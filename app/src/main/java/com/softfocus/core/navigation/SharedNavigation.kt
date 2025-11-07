@@ -109,6 +109,12 @@ fun NavGraphBuilder.sharedNavigation(
                                 GeneralHomeScreen(
                                     onNavigateToNotifications = {
                                         navController.navigate(Route.Notifications.path)
+                                    },
+                                    onNavigateToLibrary = {
+                                        navController.navigate(Route.LibraryGeneralBrowse.path)
+                                    },
+                                    onNavigateToContentDetail = { contentId ->
+                                        navController.navigate(Route.LibraryGeneralDetail.createRoute(contentId))
                                     }
                                 )
                             }

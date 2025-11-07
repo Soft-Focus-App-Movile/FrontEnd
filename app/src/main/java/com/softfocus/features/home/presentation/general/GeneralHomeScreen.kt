@@ -3,6 +3,7 @@ package com.softfocus.features.home.presentation.general
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.res.painterResource
 import com.softfocus.R
 import androidx.compose.material3.*
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,22 +41,32 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softfocus.ui.theme.CrimsonSemiBold
+import com.softfocus.ui.theme.Gray787
 import com.softfocus.ui.theme.Gray828
+import com.softfocus.ui.theme.Green29
 import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.Green65
 import com.softfocus.ui.theme.GreenEC
 import com.softfocus.ui.theme.SourceSansRegular
+import com.softfocus.ui.theme.SourceSansSemiBold
 import com.softfocus.ui.theme.YellowCB9D
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.request.crossfade
 import com.softfocus.features.notifications.presentation.list.NotificationsViewModel
+import com.softfocus.features.library.domain.models.ContentItem
+import com.softfocus.features.library.presentation.di.libraryViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeneralHomeScreen(
-    onNavigateToNotifications: () -> Unit = {}
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToLibrary: () -> Unit = {},
+    onNavigateToContentDetail: (String) -> Unit = {},
+    viewModel: GeneralHomeViewModel = libraryViewModel { GeneralHomeViewModel(it) }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -66,6 +80,9 @@ fun GeneralHomeScreen(
     }
     val notificationsViewModel: NotificationsViewModel = hiltViewModel()
     val notificationsState by notificationsViewModel.state.collectAsState()
+
+    // Estado de las recomendaciones
+    val recommendationsState by viewModel.recommendationsState.collectAsState()
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -221,7 +238,7 @@ fun GeneralHomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 24.dp)
             ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -276,7 +293,7 @@ fun GeneralHomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier
@@ -289,27 +306,79 @@ fun GeneralHomeScreen(
                     text = "Recomendaciones",
                     style = CrimsonSemiBold,
                     fontSize = 20.sp,
-                    color = Gray828
+                    color = Green65
                 )
-                TextButton(onClick = { }) {
+                TextButton(onClick = onNavigateToLibrary) {
                     Text(
                         text = "ver todas",
-                        style = SourceSansRegular,
+                        style = SourceSansSemiBold,
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        color = Gray787
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                items(mockRecommendations) { recommendation ->
-                    RecommendationCard(recommendation)
+            // Contenido de recomendaciones según el estado
+            when (val state = recommendationsState) {
+                is RecommendationsState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Green49)
+                    }
+                }
+                is RecommendationsState.Success -> {
+                    RecommendationsCarousel(
+                        recommendations = state.recommendations,
+                        onContentClick = onNavigateToContentDetail
+                    )
+                }
+                is RecommendationsState.Empty -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No hay recomendaciones disponibles",
+                            style = SourceSansRegular,
+                            fontSize = 14.sp,
+                            color = Gray787
+                        )
+                    }
+                }
+                is RecommendationsState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .padding(horizontal = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Error al cargar recomendaciones",
+                            style = SourceSansRegular,
+                            fontSize = 14.sp,
+                            color = Gray787
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(onClick = { viewModel.retry() }) {
+                            Text(
+                                text = "Reintentar",
+                                style = SourceSansSemiBold,
+                                fontSize = 14.sp,
+                                color = Green49
+                            )
+                        }
+                    }
                 }
             }
 
@@ -422,53 +491,172 @@ fun GeneralHomeScreen(
     }
 }
 
+/**
+ * Carrusel de recomendaciones con auto-scroll continuo y suave
+ */
 @Composable
-fun RecommendationCard(recommendation: Recommendation) {
-    Card(
-        modifier = Modifier
-            .width(100.dp)
-            .height(160.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+fun RecommendationsCarousel(
+    recommendations: List<ContentItem>,
+    onContentClick: (String) -> Unit
+) {
+    val context = LocalContext.current
+
+    // Estado para controlar el scroll
+    val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    // Detectar si el usuario está haciendo scroll manual
+    val isUserScrolling = lazyListState.isScrollInProgress
+    var lastUserInteraction by remember { mutableStateOf(0L) }
+
+    // Detectar interacción del usuario
+    LaunchedEffect(isUserScrolling) {
+        if (isUserScrolling) {
+            lastUserInteraction = System.currentTimeMillis()
+        }
+    }
+
+    // Auto-scroll continuo muy lento y suave
+    LaunchedEffect(recommendations) {
+        if (recommendations.isNotEmpty()) {
+            var totalScrollOffset = 0
+
+            while (true) {
+                delay(30L) // Delay para suavidad (30ms entre cada movimiento)
+
+                try {
+                    // Pausar auto-scroll si el usuario interactuó recientemente (últimos 3 segundos)
+                    val timeSinceInteraction = System.currentTimeMillis() - lastUserInteraction
+                    if (timeSinceInteraction > 3000 && !isUserScrolling) {
+                        totalScrollOffset += 1
+
+                        // Calcular índice y offset basados en el scroll total
+                        val itemWidth = 152 // 140 (ancho card) + 12 (spacing)
+                        val currentIndex = (totalScrollOffset / itemWidth) % recommendations.size
+                        val currentOffset = totalScrollOffset % itemWidth
+
+                        // Scroll suave sin saltos
+                        lazyListState.scrollToItem(currentIndex, currentOffset)
+                    }
+                } catch (e: Exception) {
+                    // Ignorar errores de scroll
+                }
+            }
+        }
+    }
+
+    LazyRow(
+        state = lazyListState,
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(Color.LightGray)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = recommendation.action,
-                style = SourceSansRegular,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Gray828
-            )
-            Text(
-                text = recommendation.category,
-                style = SourceSansRegular,
-                fontSize = 10.sp,
-                color = Color.Gray
+        items(recommendations) { content ->
+            RecommendationCard(
+                content = content,
+                onClick = { onContentClick(content.externalId) },
+                context = context
             )
         }
     }
 }
 
-data class Recommendation(
-    val action: String,
-    val category: String
-)
+/**
+ * Card de recomendación con imagen real y botón Ver
+ */
+@Composable
+fun RecommendationCard(
+    content: ContentItem,
+    onClick: () -> Unit,
+    context: android.content.Context
+) {
+    Card(
+        modifier = Modifier
+            .width(140.dp)
+            .height(220.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Imagen del contenido
+                val imageUrl = content.posterUrl ?: content.backdropUrl ?: content.thumbnailUrl ?: content.photoUrl
 
-val mockRecommendations = listOf(
-    Recommendation("Ver", "Soul"),
-    Recommendation("Escuchar", "Música Acústica"),
-    Recommendation("Meditar", "Prana")
-)
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(imageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = content.title,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .background(Color.LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_search),
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+
+                // Título del contenido
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .weight(1f),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = content.title,
+                        style = SourceSansRegular,
+                        fontSize = if (content.title.length > 30) 10.sp else 12.sp,
+                        color = Green29,
+                        maxLines = 2,
+                        lineHeight = if (content.title.length > 30) 12.sp else 14.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Botón Ver
+                    Button(
+                        onClick = onClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = YellowCB9D
+                        ),
+                        shape = RoundedCornerShape(6.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            text = "Ver",
+                            style = SourceSansRegular,
+                            fontSize = 11.sp,
+                            color = Color.Black
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
@@ -496,7 +684,11 @@ fun GeneralHomeScreenPreview() {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Card de registro de ánimo
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+        ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
