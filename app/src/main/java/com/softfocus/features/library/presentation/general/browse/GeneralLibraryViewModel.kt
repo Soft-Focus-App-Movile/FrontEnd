@@ -7,6 +7,7 @@ import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.domain.models.EmotionalTag
 import com.softfocus.features.library.domain.repositories.LibraryRepository
+import com.softfocus.features.library.presentation.general.browse.components.VideoCategory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +38,9 @@ class GeneralLibraryViewModel(
 
     private val _selectedEmotion = MutableStateFlow<EmotionalTag?>(null)
     val selectedEmotion: StateFlow<EmotionalTag?> = _selectedEmotion.asStateFlow()
+
+    private val _selectedVideoCategory = MutableStateFlow<VideoCategory?>(null)
+    val selectedVideoCategory: StateFlow<VideoCategory?> = _selectedVideoCategory.asStateFlow()
 
     private val _favoriteIds = MutableStateFlow<Set<String>>(emptySet())
     val favoriteIds: StateFlow<Set<String>> = _favoriteIds.asStateFlow()
@@ -172,6 +176,43 @@ class GeneralLibraryViewModel(
     fun clearEmotionFilter() {
         _selectedEmotion.value = null
         loadAllContent()
+    }
+
+    /**
+     * Carga contenido filtrado por categoría de video
+     */
+    fun loadContentByVideoCategory(category: VideoCategory) {
+        viewModelScope.launch {
+            Log.d(TAG, "loadContentByVideoCategory: Iniciando búsqueda para categoría ${category.displayName}")
+            _selectedVideoCategory.value = category
+            _uiState.value = GeneralLibraryUiState.Loading
+
+            try {
+                repository.searchContent(
+                    query = category.queryText,
+                    contentType = ContentType.Video,
+                    emotionFilter = null,
+                    limit = 20
+                ).onSuccess { videos ->
+                    Log.d(TAG, "loadContentByVideoCategory: ✅ Encontrados ${videos.size} videos")
+                    val contentMap = mapOf(ContentType.Video to videos)
+                    _uiState.value = GeneralLibraryUiState.Success(
+                        contentByType = contentMap,
+                        selectedType = ContentType.Video
+                    )
+                }.onFailure { error ->
+                    Log.e(TAG, "loadContentByVideoCategory: ❌ Error: ${error.message}", error)
+                    _uiState.value = GeneralLibraryUiState.Error(
+                        error.message ?: "Error al cargar videos"
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "loadContentByVideoCategory: ❌ Excepción: ${e.message}", e)
+                _uiState.value = GeneralLibraryUiState.Error(
+                    e.message ?: "Error al cargar videos"
+                )
+            }
+        }
     }
 
     fun searchContent(query: String) {

@@ -213,21 +213,37 @@ fun NavGraphBuilder.generalNavigation(
                 ) {
                     com.softfocus.features.library.presentation.general.browse.GeneralLibraryScreen(
                         onContentClick = { content ->
-                            // Detectar si es música para abrir Spotify directamente
-                            if (content.type == com.softfocus.features.library.domain.models.ContentType.Music) {
-                                // Abrir Spotify con la canción
-                                if (!content.spotifyUrl.isNullOrBlank()) {
-                                    try {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(content.spotifyUrl))
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "No se pudo abrir Spotify", Toast.LENGTH_SHORT).show()
+                            when (content.type) {
+                                // Detectar si es música para abrir Spotify directamente
+                                com.softfocus.features.library.domain.models.ContentType.Music -> {
+                                    if (!content.spotifyUrl.isNullOrBlank()) {
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(content.spotifyUrl))
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "No se pudo abrir Spotify", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Esta canción no tiene enlace de Spotify", Toast.LENGTH_SHORT).show()
                                     }
-                                } else {
-                                    Toast.makeText(context, "Esta canción no tiene enlace de Spotify", Toast.LENGTH_SHORT).show()
                                 }
-                            } else {
-                                navController.navigate(Route.LibraryGeneralDetail.createRoute(content.id))
+                                // Detectar si es video para abrir YouTube directamente
+                                com.softfocus.features.library.domain.models.ContentType.Video -> {
+                                    if (!content.youtubeUrl.isNullOrBlank()) {
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(content.youtubeUrl))
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "No se pudo abrir YouTube", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Este video no tiene enlace de YouTube", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                // Para otros tipos, navegar a la pantalla de detalle
+                                else -> {
+                                    navController.navigate(Route.LibraryGeneralDetail.createRoute(content.id))
+                                }
                             }
                         }
                     )

@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -42,9 +44,12 @@ import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.domain.models.EmotionalTag
 import com.softfocus.features.library.presentation.di.libraryViewModel
+import com.softfocus.features.library.presentation.general.browse.components.CategoryIcons
 import com.softfocus.features.library.presentation.general.browse.components.ContentCard
 import com.softfocus.features.library.presentation.general.browse.components.FilterBottomSheet
 import com.softfocus.features.library.presentation.general.browse.components.SearchBarWithFilter
+import com.softfocus.features.library.presentation.general.browse.components.VideoCard
+import com.softfocus.features.library.presentation.general.browse.components.VideoCategory
 import com.softfocus.features.library.presentation.shared.getDisplayName
 import com.softfocus.ui.theme.*
 
@@ -70,6 +75,7 @@ fun GeneralLibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val selectedType by viewModel.selectedType.collectAsState()
     val selectedEmotion by viewModel.selectedEmotion.collectAsState()
+    val selectedVideoCategory by viewModel.selectedVideoCategory.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
@@ -83,12 +89,14 @@ fun GeneralLibraryScreen(
         uiState = uiState,
         selectedType = selectedType,
         selectedEmotion = selectedEmotion,
+        selectedVideoCategory = selectedVideoCategory,
         favoriteIds = favoriteIds,
         searchQuery = searchQuery,
         onSearchQueryChange = { searchQuery = it },
         onTabSelected = { viewModel.selectContentType(it) },
         onFilterClear = { viewModel.clearEmotionFilter() },
         onEmotionSelected = { viewModel.loadContentByEmotion(it) },
+        onVideoCategorySelected = { viewModel.loadContentByVideoCategory(it) },
         onRetry = { viewModel.retry() },
         onFavoriteClick = { viewModel.toggleFavorite(it) },
         onContentClick = onContentClick
@@ -108,8 +116,10 @@ fun GeneralLibraryScreenContent(
     onFavoriteClick: (ContentItem) -> Unit,
     modifier: Modifier = Modifier,
     selectedEmotion: EmotionalTag? = null,
+    selectedVideoCategory: VideoCategory? = null,
     onFilterClear: () -> Unit = {},
     onEmotionSelected: (EmotionalTag) -> Unit = {},
+    onVideoCategorySelected: (VideoCategory) -> Unit = {},
     onRetry: () -> Unit = {}
 ) {
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -170,12 +180,22 @@ fun GeneralLibraryScreenContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Barra de búsqueda con filtro
-            SearchBarWithFilter(
-                searchQuery = searchQuery,
-                onSearchQueryChange = onSearchQueryChange,
-                onFilterClick = { showFilterSheet = true }
-            )
+            // Para videos: mostrar iconos de categorías
+            // Para otros tipos: mostrar barra de búsqueda con filtro
+            if (selectedType == ContentType.Video) {
+                CategoryIcons(
+                    selectedCategory = selectedVideoCategory,
+                    onCategoryClick = onVideoCategorySelected,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            } else {
+                // Barra de búsqueda con filtro
+                SearchBarWithFilter(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = onSearchQueryChange,
+                    onFilterClick = { showFilterSheet = true }
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -214,6 +234,8 @@ fun GeneralLibraryScreenContent(
                                 Text(
                                     text = if (searchQuery.isNotBlank())
                                         "Intenta con otra búsqueda"
+                                    else if (selectedType == ContentType.Video)
+                                        "Selecciona una categoría para ver videos"
                                     else
                                         "Intenta con otro tipo de contenido o filtro",
                                     style = SourceSansRegular.copy(fontSize = 14.sp),
@@ -223,20 +245,38 @@ fun GeneralLibraryScreenContent(
                             }
                         }
                     } else {
-                        // Grilla de contenido
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(content) { item ->
-                                ContentCard(
-                                    content = item,
-                                    isFavorite = favoriteIds.contains(item.externalId),
-                                    onFavoriteClick = { onFavoriteClick(item) },
-                                    onClick = { onContentClick(item) }
-                                )
+                        // Para Videos: usar lista vertical con VideoCard
+                        // Para otros tipos: usar grilla con ContentCard
+                        if (selectedType == ContentType.Video) {
+                            LazyColumn(
+                                contentPadding = PaddingValues(vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(content) { item ->
+                                    VideoCard(
+                                        content = item,
+                                        isFavorite = favoriteIds.contains(item.externalId),
+                                        onFavoriteClick = { onFavoriteClick(item) },
+                                        onViewClick = { onContentClick(item) }
+                                    )
+                                }
+                            }
+                        } else {
+                            // Grilla de contenido para Movies, Music, Places
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(content) { item ->
+                                    ContentCard(
+                                        content = item,
+                                        isFavorite = favoriteIds.contains(item.externalId),
+                                        onFavoriteClick = { onFavoriteClick(item) },
+                                        onClick = { onContentClick(item) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -317,6 +357,7 @@ private fun GeneralLibraryScreenPreview() {
             searchQuery = "",
             onSearchQueryChange = {},
             onTabSelected = {},
+            selectedVideoCategory = null,
             uiState = GeneralLibraryUiState.Success(
                 contentByType = mapOf(
                     ContentType.Movie to listOf(
@@ -390,6 +431,7 @@ private fun GeneralLibraryScreenLoadingPreview() {
             searchQuery = "",
             onSearchQueryChange = {},
             onTabSelected = {},
+            selectedVideoCategory = null,
             uiState = GeneralLibraryUiState.Loading,
             favoriteIds = emptySet(),
             onContentClick = {},
@@ -410,6 +452,7 @@ private fun GeneralLibraryScreenEmptyPreview() {
             searchQuery = "",
             onSearchQueryChange = {},
             onTabSelected = {},
+            selectedVideoCategory = null,
             uiState = GeneralLibraryUiState.Success(
                 contentByType = mapOf(
                     ContentType.Movie to emptyList(),
@@ -438,6 +481,7 @@ private fun GeneralLibraryScreenErrorPreview() {
             searchQuery = "",
             onSearchQueryChange = {},
             onTabSelected = {},
+            selectedVideoCategory = null,
             uiState = GeneralLibraryUiState.Error("No se pudo cargar el contenido. Verifica tu conexión a internet."),
             favoriteIds = emptySet(),
             onContentClick = {},
