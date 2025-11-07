@@ -210,7 +210,9 @@ fun PatientHomeScreen(navController: NavController,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
-                            onClick = { },
+                            onClick = {
+                                navController.navigate(Route.CheckInForm.path)
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFFC5D9A4)
                             ),

@@ -22,6 +22,10 @@ Route(val path: String) {
     data object Tracking : Route("tracking")
     data object Crisis : Route("crisis")
 
+    // Tracking routes - NEW
+    data object Diary : Route("diary")
+    data object CheckInForm : Route("check_in_form")
+    data object Progress : Route("progress")
 
     // Library routes - General
     data object LibraryGeneralBrowse : Route("library_general_browse")

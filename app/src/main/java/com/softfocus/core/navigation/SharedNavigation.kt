@@ -29,6 +29,9 @@ import com.softfocus.features.psychologist.presentation.di.PsychologistPresentat
 import com.softfocus.features.search.presentation.detail.PsychologistDetailScreen
 import com.softfocus.features.search.presentation.search.SearchPsychologistScreen
 import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
+import com.softfocus.features.tracking.presentation.screens.CheckInFormScreen
+import com.softfocus.features.tracking.presentation.screens.DiaryScreen
+import com.softfocus.features.tracking.presentation.screens.ProgressScreen
 import com.softfocus.ui.components.navigation.GeneralBottomNav
 import com.softfocus.ui.components.navigation.PatientBottomNav
 import com.softfocus.ui.components.navigation.PsychologistBottomNav
@@ -42,6 +45,7 @@ import java.nio.charset.StandardCharsets
  * - Home (with different screens per user type)
  * - Notifications
  * - AI Chat
+ * - Tracking (Diary, Check-ins, Progress)
  */
 fun NavGraphBuilder.sharedNavigation(
     navController: NavHostController,
@@ -333,6 +337,72 @@ fun NavGraphBuilder.sharedNavigation(
         PsychologistDetailScreen(
             onNavigateBack = { navController.popBackStack() }
         )
+    }
+
+    // ==================== TRACKING ROUTES ====================
+
+    // Diary Screen (Calendar view)
+    composable(Route.Diary.path) {
+        val homeViewModel = remember { TherapyPresentationModule.getHomeViewModel(context) }
+        val isPatient = homeViewModel.isPatient.collectAsState()
+
+        Scaffold(
+            containerColor = Color.Transparent,
+            bottomBar = {
+                if (isPatient.value) {
+                    PatientBottomNav(navController)
+                } else {
+                    GeneralBottomNav(navController)
+                }
+            }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                DiaryScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToCheckIn = { navController.navigate(Route.CheckInForm.path) },
+                    onNavigateToProgress = { navController.navigate(Route.Progress.path) }
+                )
+            }
+        }
+    }
+
+    // Check-in Form Screen (Multi-step form)
+    composable(Route.CheckInForm.path) {
+        CheckInFormScreen(
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateToDiary = {
+                // Primero limpia el stack del formulario
+                navController.popBackStack()
+                // Luego navega al diario
+                navController.navigate(Route.Diary.path) {
+                    // Opcional: limpia el back stack para evitar volver al formulario
+                    popUpTo(Route.Home.path) { inclusive = false }
+                }
+            }
+        )
+    }
+
+    // Progress Screen (Charts and statistics)
+    composable(Route.Progress.path) {
+        val homeViewModel = remember { TherapyPresentationModule.getHomeViewModel(context) }
+        val isPatient = homeViewModel.isPatient.collectAsState()
+
+        Scaffold(
+            containerColor = Color.Transparent,
+            bottomBar = {
+                if (isPatient.value) {
+                    PatientBottomNav(navController)
+                } else {
+                    GeneralBottomNav(navController)
+                }
+            }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                ProgressScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+        }
     }
 
 }
