@@ -20,6 +20,10 @@ object PsychologistPresentationModule {
         authToken = token
     }
 
+    fun clearAuthToken() {
+        authToken = null
+    }
+
     private fun getPsychologistService(): PsychologistService {
         return getRetrofit().create(PsychologistService::class.java)
     }

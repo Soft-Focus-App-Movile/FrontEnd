@@ -1,15 +1,12 @@
 package com.softfocus.features.home.presentation.general
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.res.painterResource
 import com.softfocus.R
 import androidx.compose.material3.*
@@ -21,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import com.softfocus.core.data.local.UserSession
 import com.softfocus.core.utils.LocationHelper
@@ -29,25 +27,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.softfocus.ui.theme.CrimsonSemiBold
-import com.softfocus.ui.theme.Gray828
+import com.softfocus.ui.theme.Gray787
 import com.softfocus.ui.theme.Green49
+import com.softfocus.ui.theme.Green65
+import com.softfocus.ui.theme.GreenEC
 import com.softfocus.ui.theme.SourceSansRegular
+import com.softfocus.ui.theme.SourceSansSemiBold
+import com.softfocus.ui.theme.YellowCB9D
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.softfocus.features.home.presentation.components.RecommendationsSection
 import com.softfocus.features.notifications.presentation.list.NotificationsViewModel
+import com.softfocus.features.library.presentation.di.libraryViewModel
+import com.softfocus.features.home.presentation.components.WelcomeCard
+import com.softfocus.features.home.presentation.components.TrackingHome
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun GeneralHomeScreen(
-    onNavigateToNotifications: () -> Unit = {}
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToLibrary: () -> Unit = {},
+    onNavigateToContentDetail: (String) -> Unit = {},
+    onNavigateToSearchPsychologist: () -> Unit = {},
+    onNavigateToAIChat: () -> Unit = {},
+    viewModel: GeneralHomeViewModel = libraryViewModel { GeneralHomeViewModel(it) }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -61,6 +70,9 @@ fun GeneralHomeScreen(
     }
     val notificationsViewModel: NotificationsViewModel = hiltViewModel()
     val notificationsState by notificationsViewModel.state.collectAsState()
+
+    // Estado de las recomendaciones
+    val recommendationsState by viewModel.recommendationsState.collectAsState()
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -167,7 +179,12 @@ fun GeneralHomeScreen(
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .shadow(4.dp, RoundedCornerShape(8.dp)),
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                onNavigateToSearchPsychologist()
+                            }
+                        }
+                        .clickable(onClick = onNavigateToSearchPsychologist),
                     shape = RoundedCornerShape(8.dp),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.White,
@@ -175,11 +192,13 @@ fun GeneralHomeScreen(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent
-                    )
+                    ),
+                    readOnly = true,
+                    enabled = false
                 )
 
                 IconButton(
-                    onClick = { },
+                    onClick = onNavigateToSearchPsychologist,
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(8.dp))
@@ -196,261 +215,106 @@ fun GeneralHomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "Hola $userName ,",
-                style = CrimsonSemiBold,
-                fontSize = 24.sp,
-                color = Gray828,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Text(
-                text = "¿Cómo te sientes hoy?",
-                style = CrimsonSemiBold,
-                fontSize = 24.sp,
-                color = Gray828,
-                modifier = Modifier.padding(horizontal = 16.dp)
+            // Componente 1: Bienvenida y card de registro de ánimo
+            WelcomeCard(
+                userName = userName,
+                onRegisterMoodClick = { /* TODO: Navegar a registro de ánimo */ }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Registra tu estado de ánimo",
-                            style = SourceSansRegular,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Gray828
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = { },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFC5D9A4)
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = "Registrar ahora",
-                                style = SourceSansRegular,
-                                fontSize = 14.sp,
-                                color = Color.Black
-                            )
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF5F5F5))
-                    )
-                }
-            }
+            // Componente 2: Sección completa de recomendaciones
+            RecommendationsSection(
+                recommendationsState = recommendationsState,
+                onNavigateToLibrary = onNavigateToLibrary,
+                onContentClick = onNavigateToContentDetail,
+                onRetry = { viewModel.retry() }
+            )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Recomendaciones",
-                    style = CrimsonSemiBold,
-                    fontSize = 20.sp,
-                    color = Gray828
-                )
-                TextButton(onClick = { }) {
-                    Text(
-                        text = "ver todas",
-                        style = SourceSansRegular,
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                items(mockRecommendations) { recommendation ->
-                    RecommendationCard(recommendation)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFC5D9A4))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Has registrado 4 días\nesta semana",
-                        style = SourceSansRegular,
-                        fontSize = 16.sp,
-                        color = Color.Black,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFF5F5F5))
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Llevas 3 días sintiéndote mal,",
-                            style = SourceSansRegular,
-                            fontSize = 14.sp,
-                            color = Gray828
-                        )
-                        Text(
-                            text = "¿necesitas ayuda?",
-                            style = SourceSansRegular,
-                            fontSize = 14.sp,
-                            color = Gray828
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = { },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFC5D9A4)
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Hablar con IA",
-                                style = SourceSansRegular,
-                                fontSize = 14.sp,
-                                color = Color.Black
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(
-                            onClick = { },
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color.Black
-                            )
-                        ) {
-                            Text(
-                                text = "Buscar Psicólogo",
-                                style = SourceSansRegular,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                }
-            }
+            // Componente 3: Tracking y ayuda
+            TrackingHome(
+                daysRegistered = 4,
+                totalDays = 7,
+                daysFeelingSad = 3,
+                onAIChatClick = onNavigateToAIChat,
+                onSearchPsychologistClick = onNavigateToSearchPsychologist
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-fun RecommendationCard(recommendation: Recommendation) {
-    Card(
+fun GeneralHomeScreenPreview() {
+    Column(
         modifier = Modifier
-            .width(100.dp)
-            .height(160.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // Componente 1: Bienvenida
+        WelcomeCard(
+            userName = "Laura",
+            onRegisterMoodClick = {}
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Título de recomendaciones
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(Color.LightGray)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = recommendation.action,
-                style = SourceSansRegular,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Gray828
+                text = "Recomendaciones",
+                style = CrimsonSemiBold,
+                fontSize = 20.sp,
+                color = Green65
             )
+            TextButton(onClick = {}) {
+                Text(
+                    text = "ver todas",
+                    style = SourceSansSemiBold,
+                    fontSize = 14.sp,
+                    color = Gray787
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Placeholder para recomendaciones
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(Color.LightGray.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.Center
+        ) {
             Text(
-                text = recommendation.category,
+                text = "Recomendaciones Carousel",
                 style = SourceSansRegular,
-                fontSize = 10.sp,
                 color = Color.Gray
             )
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Componente 3: Tracking
+        TrackingHome(
+            daysRegistered = 4,
+            totalDays = 7,
+            daysFeelingSad = 3,
+            onAIChatClick = {},
+            onSearchPsychologistClick = {}
+        )
     }
 }
-
-data class Recommendation(
-    val action: String,
-    val category: String
-)
-
-val mockRecommendations = listOf(
-    Recommendation("Ver", "Soul"),
-    Recommendation("Escuchar", "Música Acústica"),
-    Recommendation("Meditar", "Prana")
-)

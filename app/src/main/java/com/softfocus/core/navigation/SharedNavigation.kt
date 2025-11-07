@@ -23,10 +23,11 @@ import com.softfocus.features.auth.domain.models.UserType
 import com.softfocus.features.home.presentation.general.GeneralHomeScreen
 import com.softfocus.features.home.presentation.patient.PatientHomeScreen
 import com.softfocus.features.home.presentation.psychologist.PsychologistHomeScreen
-import com.softfocus.features.notifications.presentation.di.NotificationPresentationModule
 import com.softfocus.features.notifications.presentation.list.NotificationsScreen
 import com.softfocus.features.notifications.presentation.preferences.NotificationPreferencesScreen
 import com.softfocus.features.psychologist.presentation.di.PsychologistPresentationModule
+import com.softfocus.features.search.presentation.detail.PsychologistDetailScreen
+import com.softfocus.features.search.presentation.search.SearchPsychologistScreen
 import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
 import com.softfocus.ui.components.navigation.GeneralBottomNav
 import com.softfocus.ui.components.navigation.PatientBottomNav
@@ -109,6 +110,18 @@ fun NavGraphBuilder.sharedNavigation(
                                 GeneralHomeScreen(
                                     onNavigateToNotifications = {
                                         navController.navigate(Route.Notifications.path)
+                                    },
+                                    onNavigateToLibrary = {
+                                        navController.navigate(Route.LibraryGeneralBrowse.path)
+                                    },
+                                    onNavigateToContentDetail = { contentId ->
+                                        navController.navigate(Route.LibraryGeneralDetail.createRoute(contentId))
+                                    },
+                                    onNavigateToSearchPsychologist = {
+                                        navController.navigate(Route.SearchPsychologist.path)
+                                    },
+                                    onNavigateToAIChat = {
+                                        navController.navigate(Route.AIWelcome.path)
                                     }
                                 )
                             }
@@ -298,6 +311,28 @@ fun NavGraphBuilder.sharedNavigation(
                 onBackClick = { navController.popBackStack() }
             )
         }
+    }
+
+    // Search Psychologist Screen
+    composable(Route.SearchPsychologist.path) {
+        SearchPsychologistScreen(
+            onNavigateBack = { navController.popBackStack() },
+            onPsychologistClick = { psychologistId ->
+                navController.navigate(Route.PsychologistDetail.createRoute(psychologistId))
+            }
+        )
+    }
+
+    // Psychologist Detail Screen
+    composable(
+        route = Route.PsychologistDetail.path,
+        arguments = listOf(
+            navArgument("psychologistId") { type = NavType.StringType }
+        )
+    ) {
+        PsychologistDetailScreen(
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 
 }

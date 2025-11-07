@@ -3,6 +3,7 @@ package com.softfocus.features.therapy.presentation.di
 import android.content.Context
 import com.softfocus.core.data.local.LocalUserDataSource
 import com.softfocus.core.networking.ApiConstants
+import com.softfocus.core.networking.Auth401Interceptor
 import com.softfocus.features.therapy.data.remote.TherapyService
 import com.softfocus.features.therapy.data.repositories.TherapyRepositoryImpl
 import com.softfocus.features.therapy.domain.repositories.TherapyRepository
@@ -20,9 +21,18 @@ import java.util.concurrent.TimeUnit
 object TherapyPresentationModule {
 
     private var authToken: String? = null
+    private var applicationContext: Context? = null
+
+    fun init(context: Context) {
+        applicationContext = context.applicationContext
+    }
 
     fun setAuthToken(token: String) {
         authToken = token
+    }
+
+    fun clearAuthToken() {
+        authToken = null
     }
 
     private fun getTherapyService(): TherapyService {
@@ -50,13 +60,19 @@ object TherapyPresentationModule {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
-            .build()
+
+        // Add 401 interceptor if context is available
+        applicationContext?.let {
+            builder.addInterceptor(Auth401Interceptor(it))
+        }
+
+        return builder.build()
     }
 
     private fun getTherapyRepository(): TherapyRepository {

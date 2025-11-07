@@ -8,12 +8,16 @@ class UserSession(context: Context) {
     private val prefs = context.getSharedPreferences("user_session", Context.MODE_PRIVATE)
 
     fun saveUser(user: User) {
+        // Calculate token expiration time (7 days from now)
+        val expirationTime = System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000L) // 7 days in milliseconds
+
         prefs.edit()
             .putString(KEY_USER_ID, user.id)
             .putString(KEY_EMAIL, user.email)
             .putString(KEY_USER_TYPE, user.userType.name)
             .putBoolean(KEY_IS_VERIFIED, user.isVerified)
             .putString(KEY_TOKEN, user.token)
+            .putLong(KEY_TOKEN_EXPIRATION, expirationTime)
             .putString(KEY_FULL_NAME, user.fullName)
             .putString(KEY_FIRST_NAME, user.firstName)
             .putString(KEY_LAST_NAME, user.lastName)
@@ -70,12 +74,26 @@ class UserSession(context: Context) {
         prefs.edit().clear().apply()
     }
 
+    /**
+     * Checks if the stored token has expired.
+     * @return true if token is expired, false if still valid
+     */
+    fun isTokenExpired(): Boolean {
+        val expirationTime = prefs.getLong(KEY_TOKEN_EXPIRATION, 0L)
+        if (expirationTime == 0L) {
+            // No expiration time stored, consider expired for safety
+            return true
+        }
+        return System.currentTimeMillis() >= expirationTime
+    }
+
     companion object {
         private const val KEY_USER_ID = "user_id"
         private const val KEY_EMAIL = "user_email"
         private const val KEY_USER_TYPE = "user_type"
         private const val KEY_IS_VERIFIED = "user_is_verified"
         private const val KEY_TOKEN = "user_token"
+        private const val KEY_TOKEN_EXPIRATION = "user_token_expiration"
         private const val KEY_FULL_NAME = "user_full_name"
         private const val KEY_FIRST_NAME = "user_first_name"
         private const val KEY_LAST_NAME = "user_last_name"

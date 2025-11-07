@@ -774,7 +774,7 @@ http://98.90.172.251:5000/swagger/index.html
 5. Maria Lopes
    - Email: patient5@test.com                                                                                                                                                                                                      
    - Password: Patient123!
-
+> 
   ---
 👨‍⚕ Psicólogos Verificados (3)
 38IIH68L
@@ -795,4 +795,11 @@ http://98.90.172.251:5000/swagger/index.html
     - Email: admin@softfocus.com
     - Password: Admin123!
 
+ayer habiamos estaod avanzando en general home screen hicimos hasta la card q esta debajo del buscador ahora te dor indicaciones iremos continuando en library busca algo que use el endpoint de GET
+/api/v1/library/recommendations/content  y        
+usalo para hacer este apartado que tenemos debjo de la card  sale contenido con su imagen y se scrollea de lado, puedes poner un autoscroll automatico para q vaya pasando el contenido etc y si rpesiona uno que        
+vaya a la pantalla de su detalle que tambien esta en library,lo de los detalles, y si presiona ver todas que te lleve a la pantalla de library, esto q te diugo es de general navigation nada mas eh todo lo q estamos ahceindo
 
+es de general nada mas el titulo recomendaciones con crimsonsemibold y color Green65 el ver todad de color Gray787 y sourcesansemibold el boton ver en cada card q va scroleando hazlo similar al registrar ahora q ya hiciste
+
+hace un rato pero mas pequeno, se tiene q mostrar la imagen del contenido y su titulo con sourcesans pro regular color Green29 entiendes?
