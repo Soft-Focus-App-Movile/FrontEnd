@@ -33,7 +33,7 @@ fun EmotionChip(
         onClick = onClick,
         label = {
             Text(
-                text = "${emotion.getEmoji()} ${emotion.getDisplayName()}",
+                text = emotion.getDisplayName(),
                 style = SourceSansSemiBold.copy(fontSize = 14.sp)
             )
         },
@@ -52,17 +52,6 @@ fun EmotionChip(
         ),
         modifier = modifier.padding(horizontal = 4.dp)
     )
-}
-
-/**
- * Obtiene el emoji para cada emoción
- */
-fun EmotionalTag.getEmoji(): String = when (this) {
-    EmotionalTag.Happy -> "😊"
-    EmotionalTag.Sad -> "😢"
-    EmotionalTag.Anxious -> "😰"
-    EmotionalTag.Calm -> "😌"
-    EmotionalTag.Energetic -> "⚡"
 }
 
 /**

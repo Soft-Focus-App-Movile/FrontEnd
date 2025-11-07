@@ -70,15 +70,38 @@ class LibraryRepositoryImpl(
                 limit = limit
             )
 
+            android.util.Log.d("LibraryRepository", "Buscando: query='$query', type=${contentType.name}")
+
             val response = contentSearchService.searchContent(
                 token = getAuthToken(),
                 request = request
             )
 
-            val contentItems = response.map { it.toDomain() }
+            android.util.Log.d("LibraryRepository", "Búsqueda exitosa: ${response.results.size} resultados de ${response.totalResults} totales")
+
+            val contentItems = response.results.map { it.toDomain() }
             Result.success(contentItems)
+        } catch (e: retrofit2.HttpException) {
+            val errorMsg = when (e.code()) {
+                404 -> "Endpoint de búsqueda no encontrado (404). Verifica que el backend esté actualizado."
+                500 -> "Error del servidor (500). El backend no pudo procesar la búsqueda."
+                401 -> "No autorizado (401). Tu sesión puede haber expirado."
+                else -> "Error HTTP ${e.code()}: ${e.message()}"
+            }
+            android.util.Log.e("LibraryRepository", "Error HTTP en búsqueda: $errorMsg", e)
+            Result.failure(Exception(errorMsg, e))
+        } catch (e: java.net.UnknownHostException) {
+            val errorMsg = "Sin conexión a internet. Verifica tu red."
+            android.util.Log.e("LibraryRepository", errorMsg, e)
+            Result.failure(Exception(errorMsg, e))
+        } catch (e: java.net.SocketTimeoutException) {
+            val errorMsg = "Tiempo de espera agotado. El servidor no responde."
+            android.util.Log.e("LibraryRepository", errorMsg, e)
+            Result.failure(Exception(errorMsg, e))
         } catch (e: Exception) {
-            Result.failure(Exception("Error al buscar contenido: ${e.message}", e))
+            val errorMsg = "Error inesperado: ${e.message}"
+            android.util.Log.e("LibraryRepository", errorMsg, e)
+            Result.failure(Exception(errorMsg, e))
         }
     }
 

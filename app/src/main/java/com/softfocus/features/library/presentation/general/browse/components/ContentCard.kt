@@ -95,7 +95,7 @@ fun ContentCard(
             // Título
             Text(
                 text = content.title,
-                style = CrimsonBold.copy(fontSize = 13.sp),
+                style = SourceSansRegular.copy(fontSize = 14.sp),
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -108,7 +108,7 @@ fun ContentCard(
             content.getFormattedDuration()?.let { duration ->
                 Text(
                     text = "Duración  $duration",
-                    style = SourceSansRegular.copy(fontSize = 11.sp),
+                    style = SourceSansLight.copy(fontSize = 12.sp),
                     color = Color.White.copy(alpha = 0.7f)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -126,7 +126,7 @@ fun ContentCard(
                                 Text(
                                     text = tag.getDisplayName(),
                                     style = SourceSansRegular.copy(fontSize = 11.sp),
-                                    color = Color.Black
+                                    color = Color.White
                                 )
                             },
                             colors = AssistChipDefaults.assistChipColors(

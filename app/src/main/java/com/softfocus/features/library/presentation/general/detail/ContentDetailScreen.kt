@@ -8,6 +8,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,6 +65,7 @@ fun ContentDetailScreen(
         is ContentDetailUiState.Success -> {
             val state = uiState as ContentDetailUiState.Success
             val content = state.content
+            var showTrailer by remember { mutableStateOf(false) }
 
             Column(
                 modifier = modifier
@@ -69,11 +73,13 @@ fun ContentDetailScreen(
                     .background(Color.Black)
                     .verticalScroll(scrollState)
             ) {
-                // Imagen hero con botón de volver
+                // Imagen hero con botón de volver (o reproductor de trailer)
                 ContentHeroImage(
                     imageUrl = content.backdropUrl ?: content.posterUrl,
                     contentDescription = content.title,
-                    onBackClick = onNavigateBack
+                    onBackClick = onNavigateBack,
+                    showVideoPlayer = showTrailer,
+                    trailerUrl = content.trailerUrl
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -88,11 +94,11 @@ fun ContentDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Botón de trailer (solo si hay trailerUrl)
-                if (content.trailerUrl != null) {
+                // Botón de trailer (solo si hay trailerUrl válida)
+                if (!content.trailerUrl.isNullOrBlank()) {
                     TrailerButton(
                         onClick = {
-                            // TODO: Abrir trailer en navegador o player
+                            showTrailer = true
                         }
                     )
 
