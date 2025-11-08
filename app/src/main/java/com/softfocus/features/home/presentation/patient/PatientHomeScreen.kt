@@ -1,14 +1,9 @@
 package com.softfocus.features.home.presentation.patient
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.ui.res.painterResource
 import com.softfocus.R
 import androidx.compose.material3.*
@@ -22,21 +17,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.softfocus.core.data.local.UserSession
 import com.softfocus.core.utils.LocationHelper
 import com.softfocus.features.home.presentation.components.RecommendationsSection
 import com.softfocus.features.home.presentation.components.TrackingHome
 import com.softfocus.features.home.presentation.components.WelcomeCard
+import com.softfocus.features.home.presentation.patient.components.CrisisButton
+import com.softfocus.features.home.presentation.patient.components.TasksSection
+import com.softfocus.features.home.presentation.patient.components.TherapistChatCard
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,16 +37,9 @@ import androidx.navigation.compose.rememberNavController
 import com.softfocus.core.navigation.Route
 import com.softfocus.ui.components.DraggableAIButton
 import com.softfocus.ui.theme.CrimsonSemiBold
-import com.softfocus.ui.theme.Green29
-import com.softfocus.ui.theme.Green49
-import com.softfocus.ui.theme.Green65
-
-import com.softfocus.ui.theme.Gray787
-import com.softfocus.ui.theme.SourceSansRegular
-import com.softfocus.ui.theme.SourceSansSemiBold
 import com.softfocus.features.home.presentation.patient.di.patientHomeViewModel
-import com.softfocus.ui.components.ProfileAvatar
-import com.softfocus.ui.theme.YellowCB9D
+import com.softfocus.ui.theme.Black
+import com.softfocus.ui.theme.SourceSansRegular
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,21 +99,9 @@ fun PatientHomeScreen(
                         }
                     },
                     actions = {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.Red,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "SOS",
-                                    style = SourceSansRegular,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
+                        CrisisButton(onClick = {
+                            // TODO: Navegar a pantalla de crisis
+                        })
                         Spacer(modifier = Modifier.width(8.dp))
                         IconButton(onClick = onNavigateToNotifications) {
                             Icon(
@@ -167,7 +140,7 @@ fun PatientHomeScreen(
                 text = "Chat con terapeuta",
                 style = CrimsonSemiBold,
                 fontSize = 20.sp,
-                color = Green65,
+                color = Black,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
@@ -175,7 +148,10 @@ fun PatientHomeScreen(
 
             TherapistChatCard(
                 therapistState = therapistState,
-                onRetry = { viewModel.retryTherapist() }
+                onRetry = { viewModel.retryTherapist() },
+                onChatClick = {
+                    // TODO: Navegar al chat con el terapeuta
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -184,28 +160,13 @@ fun PatientHomeScreen(
                 text = "Tareas pendientes",
                 style = CrimsonSemiBold,
                 fontSize = 20.sp,
-                color = Green65,
+                color = Black,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            TaskCard(
-                title = "Tienes 2 tareas por completar",
-                showButton = false
-            )
-
-            TaskCard(
-                title = "Ejercicio de respiración 4-7-8",
-                buttonText = "Ir",
-                showButton = true
-            )
-
-            TaskCard(
-                title = "Video bienestar guiada",
-                buttonText = "Ver",
-                showButton = true
-            )
+            TasksSection()
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -245,196 +206,6 @@ fun PatientHomeScreen(
                 navController.navigate(Route.AIWelcome.path)
             }
         )
-    }
-}
-
-@Composable
-fun TherapistChatCard(
-    therapistState: TherapistState,
-    onRetry: () -> Unit
-) {
-    val context = LocalContext.current
-
-    when (therapistState) {
-        is TherapistState.Loading -> {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = YellowCB9D)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = Green49,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        }
-        is TherapistState.Success -> {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .clickable { },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = YellowCB9D)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    ProfileAvatar(
-                        imageUrl = therapistState.psychologist.profileImageUrl,
-                        fullName = therapistState.psychologist.fullName,
-                        size = 48.dp,
-                        fontSize = 18.sp,
-                        backgroundColor = Color.White,
-                        textColor = Green49
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = therapistState.psychologist.fullName,
-                            style = SourceSansSemiBold,
-                            fontSize = 14.sp,
-                            color = Color.Black
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Recuerda escribir tu caso, ofrezco de consultar ...",
-                            style = SourceSansRegular,
-                            fontSize = 12.sp,
-                            color = Color.DarkGray,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        }
-        is TherapistState.NoTherapist -> {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = YellowCB9D)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No tienes un terapeuta asignado",
-                        style = SourceSansRegular,
-                        fontSize = 14.sp,
-                        color = Gray787
-                    )
-                }
-            }
-        }
-        is TherapistState.Error -> {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = YellowCB9D)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Error al cargar terapeuta",
-                        style = SourceSansRegular,
-                        fontSize = 14.sp,
-                        color = Gray787
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(onClick = onRetry) {
-                        Text(
-                            text = "Reintentar",
-                            style = SourceSansSemiBold,
-                            fontSize = 14.sp,
-                            color = Green49
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun TaskCard(
-    title: String,
-    buttonText: String = "",
-    showButton: Boolean
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = YellowCB9D)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.CheckCircleOutline,
-                    contentDescription = null,
-                    tint = Green49,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = title,
-                    style = SourceSansRegular,
-                    fontSize = 14.sp,
-                    color = Color.Black
-                )
-            }
-            if (showButton) {
-                Button(
-                    onClick = { },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Green49
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = buttonText,
-                        style = SourceSansRegular,
-                        fontSize = 12.sp,
-                        color = Color.White
-                    )
-                }
-            }
-        }
     }
 }
 

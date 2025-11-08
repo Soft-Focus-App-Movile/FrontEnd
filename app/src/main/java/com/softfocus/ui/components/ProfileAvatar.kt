@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -27,8 +28,9 @@ import com.softfocus.ui.theme.SourceSansSemiBold
  * @param fullName Nombre completo del usuario para obtener la inicial
  * @param size Tamaño del avatar (default 48.dp)
  * @param fontSize Tamaño de la fuente de la inicial (default 18.sp)
- * @param backgroundColor Color de fondo del círculo (default White)
+ * @param backgroundColor Color de fondo (default White)
  * @param textColor Color del texto de la inicial (default Green49)
+ * @param shape Forma del avatar (default CircleShape, puede ser RoundedCornerShape, etc.)
  */
 @Composable
 fun ProfileAvatar(
@@ -38,12 +40,13 @@ fun ProfileAvatar(
     size: Dp = 48.dp,
     fontSize: TextUnit = 18.sp,
     backgroundColor: Color = Color.White,
-    textColor: Color = Green49
+    textColor: Color = Green49,
+    shape: Shape = CircleShape
 ) {
     Box(
         modifier = modifier
             .size(size)
-            .clip(CircleShape)
+            .clip(shape)
             .background(backgroundColor),
         contentAlignment = Alignment.Center
     ) {
@@ -54,7 +57,7 @@ fun ProfileAvatar(
                 contentDescription = "Foto de perfil de $fullName",
                 modifier = Modifier
                     .size(size)
-                    .clip(CircleShape),
+                    .clip(shape),
                 contentScale = ContentScale.Crop
             )
         } else {
