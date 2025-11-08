@@ -41,38 +41,38 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
 
             // Mapear las preferencias al formato del backend
             val preferenceDtos = preferences.map { pref ->
+                val scheduleDto = pref.schedule?.let {
+                    NotificationScheduleDto(
+                        startTime = it.startTime.format(formatter),
+                        endTime = it.endTime.format(formatter),
+                        daysOfWeek = it.daysOfWeek
+                    )
+                }
+
+                android.util.Log.d("NotifRepo", "Mapeando ${pref.notificationType}: schedule=${scheduleDto}")
+
                 NotificationPreferenceDto(
-                    // Convertir CHECKIN_REMINDER -> checkin-reminder
                     notificationType = pref.notificationType.name
                         .lowercase()
                         .replace("_", "-"),
                     isEnabled = pref.isEnabled,
-                    schedule = pref.schedule?.let {
-                        NotificationScheduleDto(
-                            startTime = it.startTime.format(formatter),
-                            endTime = it.endTime.format(formatter),
-                            daysOfWeek = it.daysOfWeek ?: emptyList()
-                        )
-                    },
-                    // Convertir PUSH -> push
+                    schedule = scheduleDto,
                     deliveryMethod = pref.deliveryMethod.name.lowercase()
                 )
             }
 
-            android.util.Log.d("NotifRepo", "Enviando al backend: ${preferenceDtos.map { "${it.notificationType}=${it.isEnabled}" }}")
+            android.util.Log.d("NotifRepo", "Enviando al backend: ${preferenceDtos.map { "${it.notificationType}=${it.isEnabled}, schedule=${it.schedule}" }}")
 
             val response = notificationService.updatePreferences(
                 UpdatePreferencesRequestDto(preferenceDtos)
             )
 
             android.util.Log.d("NotifRepo", "Response code: ${response.code()}")
-            android.util.Log.d("NotifRepo", "Response body: ${response.body()}")
-            android.util.Log.d("NotifRepo", "Response error: ${response.errorBody()?.string()}")
 
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 val updatedPreferences = body.preferences?.map { it.toDomain() } ?: emptyList()
-                android.util.Log.d("NotifRepo", "Preferencias recibidas: ${updatedPreferences.map { "${it.notificationType}=${it.isEnabled}" }}")
+                android.util.Log.d("NotifRepo", "Preferencias recibidas: ${updatedPreferences.map { "${it.notificationType}=${it.isEnabled}, schedule=${it.schedule}" }}")
                 Result.success(updatedPreferences)
             } else {
                 Result.failure(Exception("Error al actualizar preferencias: ${response.code()} - ${response.message()}"))
