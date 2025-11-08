@@ -46,7 +46,7 @@ fun DraggableAIButton(
 
 
     val initialX = screenWidthPx - buttonSizePx - with(density) { 16.dp.toPx() }
-    val initialY = screenHeightPx - buttonSizePx - with(density) { 80.dp.toPx() }
+    val initialY = screenHeightPx - buttonSizePx - with(density) { 150.dp.toPx() }
 
     var offsetX by remember { mutableStateOf(initialX) }
     var offsetY by remember { mutableStateOf(initialY) }

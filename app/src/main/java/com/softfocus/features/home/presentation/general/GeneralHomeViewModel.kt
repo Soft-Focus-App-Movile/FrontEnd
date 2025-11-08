@@ -20,10 +20,9 @@ class GeneralHomeViewModel(
         private const val TAG = "GeneralHomeVM"
         private const val RESULTS_PER_SEARCH = 15
 
-        // Palabras clave rotativas por tipo de contenido
-        private val MOVIE_KEYWORDS = listOf("comedy", "drama", "action", "adventure", "romance", "thriller")
-        private val MUSIC_KEYWORDS = listOf("relax", "happy", "calm", "energetic", "peaceful", "chill")
-        private val VIDEO_KEYWORDS = listOf("meditation", "mindfulness", "yoga", "breathing", "nature", "wellness")
+        // Palabras clave rotativas enfocadas en bienestar y salud mental
+        private val MOVIE_KEYWORDS = listOf("inspirational", "feel-good", "hope", "friendship", "family", "uplifting")
+        private val MUSIC_KEYWORDS = listOf("meditation", "relaxing", "peaceful", "healing", "soothing", "calming")
     }
 
     private val _recommendationsState = MutableStateFlow<RecommendationsState>(RecommendationsState.Loading)
@@ -41,19 +40,14 @@ class GeneralHomeViewModel(
      */
     fun loadRecommendations() {
         viewModelScope.launch {
-            Log.d(TAG, "loadRecommendations: Iniciando carga de contenido variado")
+            Log.d(TAG, "loadRecommendations: Iniciando carga de películas y música")
             _recommendationsState.value = RecommendationsState.Loading
             allContent.clear()
 
             try {
-                // Buscar películas
+                // Solo buscar películas y música
                 searchAndAddContent(ContentType.Movie, getNextKeyword(MOVIE_KEYWORDS))
-
-                // Buscar música
                 searchAndAddContent(ContentType.Music, getNextKeyword(MUSIC_KEYWORDS))
-
-                // Buscar videos
-                searchAndAddContent(ContentType.Video, getNextKeyword(VIDEO_KEYWORDS))
 
                 // Filtrar solo contenido que tenga imagen válida
                 val contentWithImages = allContent.filter { item ->

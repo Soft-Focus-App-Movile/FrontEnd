@@ -24,9 +24,8 @@ class PatientHomeViewModel(
     companion object {
         private const val TAG = "PatientHomeVM"
         private const val RESULTS_PER_SEARCH = 15
-        private val MOVIE_KEYWORDS = listOf("comedy", "drama", "action", "adventure", "romance", "thriller")
-        private val MUSIC_KEYWORDS = listOf("relax", "happy", "calm", "energetic", "peaceful", "chill")
-        private val VIDEO_KEYWORDS = listOf("meditation", "mindfulness", "yoga", "breathing", "nature", "wellness")
+        private val MOVIE_KEYWORDS = listOf("inspirational", "feel-good", "hope", "friendship", "family", "uplifting")
+        private val MUSIC_KEYWORDS = listOf("meditation", "relaxing", "peaceful", "healing", "soothing", "calming")
     }
 
     private val _recommendationsState = MutableStateFlow<RecommendationsState>(RecommendationsState.Loading)
@@ -82,14 +81,14 @@ class PatientHomeViewModel(
 
     fun loadRecommendations() {
         viewModelScope.launch {
-            Log.d(TAG, "loadRecommendations: Iniciando carga de contenido variado")
+            Log.d(TAG, "loadRecommendations: Iniciando carga de películas y música")
             _recommendationsState.value = RecommendationsState.Loading
             allContent.clear()
 
             try {
+                // Solo buscar películas y música
                 searchAndAddContent(ContentType.Movie, getNextKeyword(MOVIE_KEYWORDS))
                 searchAndAddContent(ContentType.Music, getNextKeyword(MUSIC_KEYWORDS))
-                searchAndAddContent(ContentType.Video, getNextKeyword(VIDEO_KEYWORDS))
 
                 val contentWithImages = allContent.filter { item ->
                     val hasValidImage = listOfNotNull(
