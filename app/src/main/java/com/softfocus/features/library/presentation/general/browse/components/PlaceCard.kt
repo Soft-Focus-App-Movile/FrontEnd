@@ -17,12 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.Gray828
@@ -50,7 +48,7 @@ fun PlaceCard(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Imagen del lugar con placeholder
+        // Icono del lugar
         Box(
             modifier = Modifier
                 .size(90.dp)
@@ -58,23 +56,12 @@ fun PlaceCard(
                 .background(Color(0xFF2D3748)),
             contentAlignment = Alignment.Center
         ) {
-            val photoUrl = place.photoUrl?.takeIf { it.isNotBlank() }
-            if (photoUrl != null) {
-                AsyncImage(
-                    model = photoUrl,
-                    contentDescription = place.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                // Placeholder cuando no hay imagen
-                Icon(
-                    imageVector = Icons.Filled.Place,
-                    contentDescription = "Sin imagen",
-                    tint = Color(0xFF718096),
-                    modifier = Modifier.size(40.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Filled.Place,
+                contentDescription = place.title,
+                tint = Color(0xFF718096),
+                modifier = Modifier.size(40.dp)
+            )
         }
 
         // Información del lugar
