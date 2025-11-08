@@ -72,7 +72,8 @@ fun StatCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier
+            .height(160.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -80,8 +81,10 @@ fun StatCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Icono
             Icon(
@@ -90,8 +93,6 @@ fun StatCard(
                 tint = Green65,
                 modifier = Modifier.size(24.dp)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             // Título
             Text(
@@ -103,8 +104,6 @@ fun StatCard(
                 lineHeight = 14.sp
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             // Valor grande
             Text(
                 text = stat.value,
@@ -113,8 +112,6 @@ fun StatCard(
                 color = Green65,
                 textAlign = TextAlign.Center
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             // Subtítulo
             Text(

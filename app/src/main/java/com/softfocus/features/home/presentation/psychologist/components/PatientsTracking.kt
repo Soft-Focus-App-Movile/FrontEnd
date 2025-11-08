@@ -76,7 +76,7 @@ fun PatientsTracking(
                 text = "Ver todos",
                 style = SourceSansRegular,
                 fontSize = 14.sp,
-                color = Green49
+                color = Green65
             )
         }
     }
