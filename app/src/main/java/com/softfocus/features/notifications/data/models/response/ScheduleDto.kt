@@ -1,7 +1,5 @@
 package com.softfocus.features.notifications.data.models.response
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.google.gson.annotations.SerializedName
 import com.softfocus.features.notifications.domain.models.NotificationSchedule
 import java.time.LocalTime
@@ -13,15 +11,22 @@ data class ScheduleDto(
     @SerializedName("end_time")
     val endTime: String,
     @SerializedName("days_of_week")
-    val daysOfWeek: List<Int>
+    val daysOfWeek: List<Int>?
 ) {
-    @RequiresApi(Build.VERSION_CODES.O)
     fun toDomain(): NotificationSchedule {
         val formatter = DateTimeFormatter.ofPattern("HH:mm")
         return NotificationSchedule(
-            startTime = LocalTime.parse(startTime, formatter),
-            endTime = LocalTime.parse(endTime, formatter),
-            daysOfWeek = daysOfWeek
+            startTime = try {
+                LocalTime.parse(startTime, formatter)
+            } catch (e: Exception) {
+                LocalTime.of(9, 0) // Fallback
+            },
+            endTime = try {
+                LocalTime.parse(endTime, formatter)
+            } catch (e: Exception) {
+                LocalTime.of(22, 0) // Fallback
+            },
+            daysOfWeek = daysOfWeek ?: listOf(1, 2, 3, 4, 5, 6, 7)
         )
     }
 }

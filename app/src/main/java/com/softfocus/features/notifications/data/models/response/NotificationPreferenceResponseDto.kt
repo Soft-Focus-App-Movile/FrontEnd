@@ -1,7 +1,5 @@
 package com.softfocus.features.notifications.data.models.response
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.google.gson.annotations.SerializedName
 import com.softfocus.features.notifications.domain.models.*
 import java.time.LocalTime
@@ -25,10 +23,32 @@ data class NotificationPreferenceResponseDto(
         return NotificationPreference(
             id = id,
             userId = userId,
-            notificationType = NotificationType.valueOf(notificationType.uppercase()),
+            // Convertir "checkin-reminder" -> CHECKIN_REMINDER
+            notificationType = parseNotificationType(notificationType),
             isEnabled = isEnabled,
             schedule = schedule?.toDomain(),
-            deliveryMethod = DeliveryMethod.valueOf(deliveryMethod.uppercase())
+            // Convertir "push" -> PUSH
+            deliveryMethod = parseDeliveryMethod(deliveryMethod)
         )
+    }
+
+    private fun parseNotificationType(type: String): NotificationType {
+        return try {
+            // Convertir "checkin-reminder" -> "CHECKIN_REMINDER"
+            val normalized = type.uppercase().replace("-", "_")
+            NotificationType.valueOf(normalized)
+        } catch (e: IllegalArgumentException) {
+            // Si falla, usar INFO como fallback
+            NotificationType.INFO
+        }
+    }
+
+    private fun parseDeliveryMethod(method: String): DeliveryMethod {
+        return try {
+            DeliveryMethod.valueOf(method.uppercase())
+        } catch (e: IllegalArgumentException) {
+            // Si falla, usar PUSH como fallback
+            DeliveryMethod.PUSH
+        }
     }
 }

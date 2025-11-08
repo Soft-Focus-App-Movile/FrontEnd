@@ -4,5 +4,5 @@ import com.google.gson.annotations.SerializedName
 
 data class PreferenceListResponseDto(
     @SerializedName("preferences")
-    val preferences: List<NotificationPreferenceResponseDto>
+    val preferences: List<NotificationPreferenceResponseDto>?
 )

@@ -40,33 +40,40 @@ class NotificationPreferencesViewModel @Inject constructor(
 
     fun loadPreferences() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            try {
+                _state.value = _state.value.copy(isLoading = true, error = null)
 
-            val userId = userSession.getUser()?.id
-            if (userId == null) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = "Usuario no autenticado"
-                )
-                return@launch
-            }
-
-            getPreferencesUseCase(userId).fold(
-                onSuccess = { preferences ->
-                    // Asegurar que tenemos las 3 preferencias principales
-                    val enrichedPreferences = ensureMainPreferences(preferences)
-                    _state.value = _state.value.copy(
-                        preferences = enrichedPreferences,
-                        isLoading = false
-                    )
-                },
-                onFailure = { error ->
+                val userId = userSession.getUser()?.id
+                if (userId == null) {
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        error = error.message ?: "Error al cargar preferencias"
+                        error = "Usuario no autenticado"
                     )
+                    return@launch
                 }
-            )
+
+                getPreferencesUseCase(userId).fold(
+                    onSuccess = { preferences ->
+                        // Asegurar que tenemos las 3 preferencias principales
+                        val enrichedPreferences = ensureMainPreferences(preferences ?: emptyList())
+                        _state.value = _state.value.copy(
+                            preferences = enrichedPreferences,
+                            isLoading = false
+                        )
+                    },
+                    onFailure = { error ->
+                        _state.value = _state.value.copy(
+                            isLoading = false,
+                            error = error.message ?: "Error al cargar preferencias"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = "Error inesperado al cargar: ${e.message}"
+                )
+            }
         }
     }
 
@@ -76,18 +83,40 @@ class NotificationPreferencesViewModel @Inject constructor(
                 _state.value = _state.value.copy(isSaving = true, successMessage = null, error = null)
 
                 val updated = preference.copy(isEnabled = !preference.isEnabled)
-                val updatedList = _state.value.preferences.map {
+
+                // Crear lista actualizada de forma segura
+                val currentPreferences = _state.value.preferences
+                val updatedList = currentPreferences.map {
                     if (it.notificationType == updated.notificationType) updated else it
                 }
 
-                // Actualizar estado local inmediatamente
-                _state.value = _state.value.copy(preferences = updatedList)
+                // Validar que la lista no esté vacía
+                if (updatedList.isEmpty()) {
+                    _state.value = _state.value.copy(
+                        isSaving = false,
+                        error = "No hay preferencias para actualizar"
+                    )
+                    return@launch
+                }
+
+                // Log para debug
+                android.util.Log.d("NotifPrefVM", "Enviando actualización: ${updatedList.map { "${it.notificationType}=${it.isEnabled}" }}")
 
                 // Intentar guardar en el servidor
                 updatePreferencesUseCase(updatedList).fold(
                     onSuccess = { serverPreferences ->
+                        android.util.Log.d("NotifPrefVM", "Respuesta del servidor: ${serverPreferences?.map { "${it.notificationType}=${it.isEnabled}" }}")
+
+                        // Si el servidor retorna preferencias, usarlas
+                        // Si no, mantener las actualizadas localmente
+                        val finalPreferences = if (!serverPreferences.isNullOrEmpty()) {
+                            ensureMainPreferences(serverPreferences)
+                        } else {
+                            updatedList
+                        }
+
                         _state.value = _state.value.copy(
-                            preferences = serverPreferences,
+                            preferences = finalPreferences,
                             isSaving = false,
                             successMessage = "Preferencias actualizadas"
                         )
@@ -99,17 +128,17 @@ class NotificationPreferencesViewModel @Inject constructor(
                         }
                     },
                     onFailure = { error ->
+                        android.util.Log.e("NotifPrefVM", "Error al actualizar: ${error.message}", error)
                         // Revertir cambios en caso de error
                         _state.value = _state.value.copy(
-                            preferences = _state.value.preferences.map {
-                                if (it.notificationType == preference.notificationType) preference else it
-                            },
+                            preferences = currentPreferences,
                             isSaving = false,
                             error = error.message ?: "Error al actualizar"
                         )
                     }
                 )
             } catch (e: Exception) {
+                android.util.Log.e("NotifPrefVM", "Excepción en togglePreference", e)
                 _state.value = _state.value.copy(
                     isSaving = false,
                     error = "Error inesperado: ${e.message}"
@@ -131,8 +160,20 @@ class NotificationPreferencesViewModel @Inject constructor(
                     )
 
                 val updated = preference.copy(schedule = schedule)
-                val updatedList = _state.value.preferences.map {
+
+                // Crear lista actualizada de forma segura
+                val currentPreferences = _state.value.preferences
+                val updatedList = currentPreferences.map {
                     if (it.notificationType == updated.notificationType) updated else it
+                }
+
+                // Validar que la lista no esté vacía
+                if (updatedList.isEmpty()) {
+                    _state.value = _state.value.copy(
+                        isSaving = false,
+                        error = "No hay preferencias para actualizar"
+                    )
+                    return@launch
                 }
 
                 // Actualizar estado local inmediatamente
@@ -141,8 +182,9 @@ class NotificationPreferencesViewModel @Inject constructor(
                 // Intentar guardar en el servidor
                 updatePreferencesUseCase(updatedList).fold(
                     onSuccess = { serverPreferences ->
+                        val safePreferences = serverPreferences ?: updatedList
                         _state.value = _state.value.copy(
-                            preferences = serverPreferences,
+                            preferences = safePreferences,
                             isSaving = false,
                             successMessage = "Hora actualizada correctamente"
                         )
@@ -156,9 +198,7 @@ class NotificationPreferencesViewModel @Inject constructor(
                     onFailure = { error ->
                         // Revertir cambios en caso de error
                         _state.value = _state.value.copy(
-                            preferences = _state.value.preferences.map {
-                                if (it.notificationType == preference.notificationType) preference else it
-                            },
+                            preferences = currentPreferences,
                             isSaving = false,
                             error = error.message ?: "Error al actualizar hora"
                         )
@@ -167,7 +207,7 @@ class NotificationPreferencesViewModel @Inject constructor(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isSaving = false,
-                    error = "Error inesperado: ${e.message}"
+                    error = "Error inesperado: ${e.message}\n${e.stackTraceToString()}"
                 )
             }
         }
@@ -176,91 +216,119 @@ class NotificationPreferencesViewModel @Inject constructor(
     /**
      * Asegura que existen las 3 preferencias principales del mockup.
      * Si no existen, las crea con valores por defecto.
+     * IMPORTANTE: Filtra y retorna SOLO las 3 preferencias principales.
      */
     private fun ensureMainPreferences(
         preferences: List<NotificationPreference>
     ): List<NotificationPreference> {
-        val mutablePrefs = preferences.toMutableList()
+        try {
+            val mainTypes = listOf(
+                NotificationType.CHECKIN_REMINDER,
+                NotificationType.INFO,
+                NotificationType.SYSTEM_UPDATE
+            )
 
-        // 1. Recordatorios de registro diario (CHECKIN_REMINDER)
-        if (preferences.none { it.notificationType == NotificationType.CHECKIN_REMINDER }) {
-            mutablePrefs.add(
-                NotificationPreference(
-                    id = "checkin_reminder",
-                    userId = userSession.getUser()?.id ?: "",
-                    notificationType = NotificationType.CHECKIN_REMINDER,
-                    isEnabled = true,
-                    deliveryMethod = DeliveryMethod.PUSH,
-                    schedule = NotificationSchedule(
-                        startTime = LocalTime.of(9, 0),
-                        endTime = LocalTime.of(9, 0),
-                        daysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
+            // Filtrar solo las preferencias que nos interesan
+            val filteredPrefs = preferences.filter { it.notificationType in mainTypes }
+            val mutablePrefs = filteredPrefs.toMutableList()
+
+            // 1. Recordatorios de registro diario (CHECKIN_REMINDER)
+            if (filteredPrefs.none { it.notificationType == NotificationType.CHECKIN_REMINDER }) {
+                android.util.Log.d("NotifPrefVM", "Creando preferencia por defecto: CHECKIN_REMINDER")
+                mutablePrefs.add(
+                    NotificationPreference(
+                        id = "checkin_reminder_local",
+                        userId = userSession.getUser()?.id ?: "",
+                        notificationType = NotificationType.CHECKIN_REMINDER,
+                        isEnabled = true,
+                        deliveryMethod = DeliveryMethod.PUSH,
+                        schedule = NotificationSchedule(
+                            startTime = LocalTime.of(9, 0),
+                            endTime = LocalTime.of(9, 0),
+                            daysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
+                        )
                     )
                 )
-            )
-        }
-
-        // 2. Sugerencias diarias (INFO)
-        if (preferences.none { it.notificationType == NotificationType.INFO }) {
-            mutablePrefs.add(
-                NotificationPreference(
-                    id = "daily_suggestions",
-                    userId = userSession.getUser()?.id ?: "",
-                    notificationType = NotificationType.INFO,
-                    isEnabled = true,
-                    deliveryMethod = DeliveryMethod.PUSH,
-                    schedule = null
-                )
-            )
-        }
-
-        // 3. Promociones y novedades (SYSTEM_UPDATE)
-        if (preferences.none { it.notificationType == NotificationType.SYSTEM_UPDATE }) {
-            mutablePrefs.add(
-                NotificationPreference(
-                    id = "promotions",
-                    userId = userSession.getUser()?.id ?: "",
-                    notificationType = NotificationType.SYSTEM_UPDATE,
-                    isEnabled = true,
-                    deliveryMethod = DeliveryMethod.PUSH,
-                    schedule = null
-                )
-            )
-        }
-
-        // Ordenar para que aparezcan en el orden correcto
-        return mutablePrefs.sortedBy {
-            when (it.notificationType) {
-                NotificationType.CHECKIN_REMINDER -> 1
-                NotificationType.INFO -> 2
-                NotificationType.SYSTEM_UPDATE -> 3
-                else -> 4
             }
+
+            // 2. Sugerencias diarias (INFO)
+            if (filteredPrefs.none { it.notificationType == NotificationType.INFO }) {
+                android.util.Log.d("NotifPrefVM", "Creando preferencia por defecto: INFO")
+                mutablePrefs.add(
+                    NotificationPreference(
+                        id = "daily_suggestions_local",
+                        userId = userSession.getUser()?.id ?: "",
+                        notificationType = NotificationType.INFO,
+                        isEnabled = true,
+                        deliveryMethod = DeliveryMethod.PUSH,
+                        schedule = null
+                    )
+                )
+            }
+
+            // 3. Promociones y novedades (SYSTEM_UPDATE)
+            if (filteredPrefs.none { it.notificationType == NotificationType.SYSTEM_UPDATE }) {
+                android.util.Log.d("NotifPrefVM", "Creando preferencia por defecto: SYSTEM_UPDATE")
+                mutablePrefs.add(
+                    NotificationPreference(
+                        id = "promotions_local",
+                        userId = userSession.getUser()?.id ?: "",
+                        notificationType = NotificationType.SYSTEM_UPDATE,
+                        isEnabled = true,
+                        deliveryMethod = DeliveryMethod.PUSH,
+                        schedule = null
+                    )
+                )
+            }
+
+            // Ordenar para que aparezcan en el orden correcto
+            val sorted = mutablePrefs.sortedBy {
+                when (it.notificationType) {
+                    NotificationType.CHECKIN_REMINDER -> 1
+                    NotificationType.INFO -> 2
+                    NotificationType.SYSTEM_UPDATE -> 3
+                    else -> 4
+                }
+            }
+
+            android.util.Log.d("NotifPrefVM", "Preferencias finales después de ensure: ${sorted.map { "${it.notificationType}=${it.isEnabled}" }}")
+            return sorted
+        } catch (e: Exception) {
+            android.util.Log.e("NotifPrefVM", "Error en ensureMainPreferences", e)
+            // Si falla, retornar lista vacía para evitar crash
+            return emptyList()
         }
     }
 
     fun resetToDefaults() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
+            try {
+                _state.value = _state.value.copy(isLoading = true)
 
-            val userId = userSession.getUser()?.id ?: return@launch
+                val userId = userSession.getUser()?.id ?: return@launch
 
-            preferenceRepository.resetToDefaults(userId).fold(
-                onSuccess = { preferences ->
-                    val enrichedPreferences = ensureMainPreferences(preferences)
-                    _state.value = _state.value.copy(
-                        preferences = enrichedPreferences,
-                        isLoading = false,
-                        successMessage = "Configuración restaurada"
-                    )
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        error = error.message ?: "Error al restaurar"
-                    )
-                }
-            )
+                preferenceRepository.resetToDefaults(userId).fold(
+                    onSuccess = { preferences ->
+                        val enrichedPreferences = ensureMainPreferences(preferences ?: emptyList())
+                        _state.value = _state.value.copy(
+                            preferences = enrichedPreferences,
+                            isLoading = false,
+                            successMessage = "Configuración restaurada"
+                        )
+                    },
+                    onFailure = { error ->
+                        _state.value = _state.value.copy(
+                            isLoading = false,
+                            error = error.message ?: "Error al restaurar"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = "Error inesperado al restaurar: ${e.message}"
+                )
+            }
         }
     }
 }
