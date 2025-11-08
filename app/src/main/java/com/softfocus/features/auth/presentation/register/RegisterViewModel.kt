@@ -44,7 +44,7 @@ class RegisterViewModel(
     private val _confirmPasswordError = MutableStateFlow<String?>(null)
     val confirmPasswordError: StateFlow<String?> = _confirmPasswordError
 
-    private val _userType = MutableStateFlow<UserType?>(null)
+    private val _userType = MutableStateFlow<UserType?>(UserType.GENERAL)
     val userType: StateFlow<UserType?> = _userType
 
 

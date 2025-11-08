@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 class ProfileRepositoryImpl @Inject constructor(
     private val profileService: ProfileService,
-    private val therapyService: TherapyService,
+    private val therapyRepository: com.softfocus.features.therapy.domain.repositories.TherapyRepository,
     private val userSession: UserSession,
     private val context: Context
 ) : ProfileRepository {
@@ -66,34 +66,41 @@ class ProfileRepositoryImpl @Inject constructor(
 
     override suspend fun getAssignedPsychologist(): Result<AssignedPsychologist?> {
         return try {
-            val relationshipResponse = therapyService.getMyRelationship(
-                token = getAuthToken()
-            )
+            // Usa therapyRepository igual que el home
+            val relationshipResult = therapyRepository.getMyRelationship()
 
-            if (!relationshipResponse.hasRelationship || relationshipResponse.relationship == null) {
+            relationshipResult.onSuccess { relationship ->
+                if (relationship != null && relationship.isActive) {
+                    // Tiene relación terapéutica activa, cargar datos del psicólogo
+                    val psychologistId = relationship.psychologistId
+                    val psychologistResponse = profileService.getPsychologistById(psychologistId)
+
+                    if (psychologistResponse.isSuccessful && psychologistResponse.body() != null) {
+                        val profile = psychologistResponse.body()!!
+                        val assignedPsychologist = AssignedPsychologist(
+                            id = profile.id,
+                            fullName = profile.fullName,
+                            profileImageUrl = profile.profileImageUrl,
+                            professionalBio = profile.professionalBio,
+                            specialties = profile.specialties
+                        )
+                        return Result.success(assignedPsychologist)
+                    } else {
+                        return Result.failure(Exception("Error al obtener datos del psicólogo asignado: ${psychologistResponse.code()}"))
+                    }
+                } else {
+                    // No tiene relación terapéutica activa
+                    return Result.success(null)
+                }
+            }.onFailure { error ->
+                // Error al obtener la relación, devolver null para que el perfil siga funcionando
                 return Result.success(null)
             }
 
-            val psychologistId = relationshipResponse.relationship!!.psychologistId
-
-            val psychologistResponse = profileService.getPsychologistById(psychologistId)
-
-            if (psychologistResponse.isSuccessful && psychologistResponse.body() != null) {
-                val profile = psychologistResponse.body()!!
-                val assignedPsychologist = AssignedPsychologist(
-                    id = profile.id,
-                    fullName = profile.fullName,
-                    profileImageUrl = profile.profileImageUrl,
-                    professionalBio = profile.professionalBio,
-                    specialties = profile.specialties
-                )
-                Result.success(assignedPsychologist)
-            } else {
-                Result.failure(Exception("Error al obtener datos del psicólogo asignado: ${psychologistResponse.code()}"))
-            }
+            // Este punto no debería alcanzarse, pero por si acaso
+            Result.success(null)
         } catch (e: Exception) {
-            // If there's an error, return null instead of failing
-            // This allows the profile screen to still work even if psychologist data fails to load
+            // Si hay una excepción, devolver null para que el perfil siga funcionando
             Result.success(null)
         }
     }

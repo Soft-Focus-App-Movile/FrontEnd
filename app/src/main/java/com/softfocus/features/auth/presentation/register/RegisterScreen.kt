@@ -1134,7 +1134,8 @@ fun RegisterScreen(
                     firstName.isNotEmpty() &&
                     lastName.isNotEmpty() &&
                     email.isNotEmpty() &&
-                    (oauthEmail != null || (password.isNotEmpty() && confirmPassword.isNotEmpty())) &&
+                    emailError == null &&
+                    (oauthEmail != null || (password.isNotEmpty() && confirmPassword.isNotEmpty() && passwordError == null && confirmPasswordError == null)) &&
                     acceptedTerms &&
                     (userType != UserType.PSYCHOLOGIST ||
                         (licenseFile != null && diplomaFile != null && dniFile != null &&
