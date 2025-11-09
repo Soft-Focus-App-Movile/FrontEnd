@@ -3,6 +3,8 @@ package com.softfocus.features.crisis.domain.models
 data class CrisisAlert(
     val id: String,
     val patientId: String,
+    val patientName: String,
+    val patientPhotoUrl: String?,
     val psychologistId: String,
     val severity: String,
     val status: String,

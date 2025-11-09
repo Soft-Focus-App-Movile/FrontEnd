@@ -12,6 +12,7 @@ import com.softfocus.features.crisis.data.remote.CrisisService
 import com.softfocus.features.crisis.data.repositories.CrisisRepositoryImpl
 import com.softfocus.features.crisis.domain.repositories.CrisisRepository
 import com.softfocus.features.crisis.presentation.CrisisViewModel
+import com.softfocus.features.crisis.presentation.psychologist.CrisisAlertsViewModel
 import com.softfocus.core.data.local.UserSession
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -72,4 +73,11 @@ fun crisisViewModel(): CrisisViewModel {
         }
     }
     return viewModel(factory = factory)
+}
+
+object CrisisInjection {
+    fun getCrisisAlertsViewModel(context: Context): CrisisAlertsViewModel {
+        val crisisRepository = provideCrisisRepository(context)
+        return CrisisAlertsViewModel(crisisRepository)
+    }
 }

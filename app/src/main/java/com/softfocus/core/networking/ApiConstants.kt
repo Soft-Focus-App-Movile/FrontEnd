@@ -114,7 +114,7 @@ object ApiConstants {
     object Crisis {
         const val ALERT = "crisis/alert"
         const val ALERTS_BY_PATIENT = "crisis/alerts/patient"
-        const val ALERTS_BY_PSYCHOLOGIST = "crisis/alerts/psychologist"
+        const val ALERTS_BY_PSYCHOLOGIST = "crisis/alerts"
         const val ALERT_BY_ID = "crisis/alerts/{id}"
         const val UPDATE_STATUS = "crisis/alerts/{id}/status"
         const val UPDATE_SEVERITY = "crisis/alerts/{id}/severity"

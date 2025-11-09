@@ -1,6 +1,7 @@
 package com.softfocus.features.crisis.data.repositories
 
 import com.softfocus.features.crisis.data.models.request.CreateCrisisAlertRequestDto
+import com.softfocus.features.crisis.data.models.request.UpdateAlertStatusRequestDto
 import com.softfocus.features.crisis.data.remote.CrisisService
 import com.softfocus.features.crisis.domain.models.CrisisAlert
 import com.softfocus.features.crisis.domain.models.EmotionalContext
@@ -31,10 +32,20 @@ class CrisisRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPsychologistAlerts(): Result<List<CrisisAlert>> {
+    override suspend fun getPsychologistAlerts(severity: String?, status: String?, limit: Int?): Result<List<CrisisAlert>> {
         return try {
-            val response = crisisService.getPsychologistAlerts()
+            val response = crisisService.getPsychologistAlerts(severity, status, limit)
             Result.success(response.map { it.toDomain() })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateAlertStatus(alertId: String, status: String): Result<CrisisAlert> {
+        return try {
+            val request = UpdateAlertStatusRequestDto(status)
+            val response = crisisService.updateAlertStatus(alertId, request)
+            Result.success(response.toDomain())
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -44,6 +55,8 @@ class CrisisRepositoryImpl @Inject constructor(
 private fun com.softfocus.features.crisis.data.models.response.CrisisAlertResponseDto.toDomain() = CrisisAlert(
     id = id,
     patientId = patientId,
+    patientName = patientName,
+    patientPhotoUrl = patientPhotoUrl,
     psychologistId = psychologistId,
     severity = severity,
     status = status,

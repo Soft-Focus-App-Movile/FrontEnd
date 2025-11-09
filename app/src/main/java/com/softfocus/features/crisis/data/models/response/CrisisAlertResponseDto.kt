@@ -7,6 +7,10 @@ data class CrisisAlertResponseDto(
     val id: String,
     @SerializedName("patientId")
     val patientId: String,
+    @SerializedName("patientName")
+    val patientName: String,
+    @SerializedName("patientPhotoUrl")
+    val patientPhotoUrl: String?,
     @SerializedName("psychologistId")
     val psychologistId: String,
     @SerializedName("severity")

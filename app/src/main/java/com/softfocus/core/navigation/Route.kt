@@ -58,6 +58,8 @@ Route(val path: String) {
     data object PsychologistPlan : Route("psychologist_plan")
     data object PsychologistStats : Route("psychologist_stats")
 
+    data object CrisisAlerts : Route("crisis_alerts")
+
     data object AIWelcome : Route("ai_welcome")
     data object AIChat : Route("ai_chat_screen/{initialMessage}?sessionId={sessionId}") {
         fun createRoute(initialMessage: String? = null, sessionId: String? = null): String {
