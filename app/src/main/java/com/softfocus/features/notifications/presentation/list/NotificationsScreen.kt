@@ -30,7 +30,7 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun NotificationsScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToSettings: () -> Unit,
+    //onNavigateToSettings: () -> Unit,
     viewModel: NotificationsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -75,14 +75,6 @@ fun NotificationsScreen(
                                 tint = Green49
                             )
                         }
-                    }
-
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            Icons.Default.Settings,
-                            "Configuración",
-                            tint = Green49
-                        )
                     }
 
                     if (state.notifications.any { it.status != DeliveryStatus.READ }) {

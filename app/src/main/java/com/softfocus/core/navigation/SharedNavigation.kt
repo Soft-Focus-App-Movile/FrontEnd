@@ -181,9 +181,6 @@ fun NavGraphBuilder.sharedNavigation(
                     NotificationsScreen(
                         onNavigateBack = {
                             navController.popBackStack()
-                        },
-                        onNavigateToSettings = {
-                            navController.navigate(Route.NotificationPreferences.path)
                         }
                     )
                 }
