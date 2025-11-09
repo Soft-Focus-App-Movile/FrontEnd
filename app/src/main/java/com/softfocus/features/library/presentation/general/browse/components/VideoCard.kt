@@ -1,8 +1,11 @@
 package com.softfocus.features.library.presentation.general.browse.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
@@ -30,25 +33,36 @@ import com.softfocus.ui.theme.*
  *
  * @param content Item de contenido de video
  * @param isFavorite Si el contenido está marcado como favorito
+ * @param isSelected Si el contenido está seleccionado (modo psicólogo)
+ * @param isSelectionMode Si está en modo selección (mostrar overlay)
  * @param onFavoriteClick Callback al hacer clic en el botón de favorito
  * @param onViewClick Callback al hacer clic en el botón "Ver"
+ * @param onClick Callback al hacer clic en el card (para selección)
  * @param modifier Modificador opcional
  */
 @Composable
 fun VideoCard(
     content: ContentItem,
     isFavorite: Boolean = false,
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
     onFavoriteClick: () -> Unit = {},
     onViewClick: () -> Unit = {},
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(enabled = isSelectionMode, onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1C1C1C)
+            containerColor = if (isSelectionMode && isSelected) {
+                Color(0xFF1C1C1C).copy(alpha = 0.7f)
+            } else {
+                Color(0xFF1C1C1C)
+            }
         )
     ) {
         Row(
@@ -56,7 +70,7 @@ fun VideoCard(
                 .fillMaxWidth()
                 .padding(12.dp)
         ) {
-            // Thumbnail del video
+            // Thumbnail del video con indicador de selección
             Box(
                 modifier = Modifier
                     .width(120.dp)
@@ -71,20 +85,40 @@ fun VideoCard(
                         .clip(RoundedCornerShape(8.dp))
                 )
 
-                // Botón de favorito en esquina superior derecha del thumbnail
-                IconButton(
-                    onClick = onFavoriteClick,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(28.dp)
-                        .padding(2.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
-                        tint = if (isFavorite) Green49 else Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
+                // Overlay de selección cuando está en modo selección
+                if (isSelectionMode && isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Green49.copy(alpha = 0.3f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = "Seleccionado",
+                            tint = Green49,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                }
+
+                // Botón de favorito en esquina superior derecha del thumbnail (solo si NO está en modo selección)
+                if (!isSelectionMode) {
+                    IconButton(
+                        onClick = onFavoriteClick,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(28.dp)
+                            .padding(2.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                            tint = if (isFavorite) Green49 else Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 
@@ -132,21 +166,23 @@ fun VideoCard(
                     }
                 }
 
-                // Botón "Ver"
-                Button(
-                    onClick = onViewClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Green49
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(
-                        text = "Ver",
-                        style = SourceSansSemiBold.copy(fontSize = 13.sp),
-                        color = Color.Black
-                    )
+                // Botón "Ver" (solo si NO está en modo selección)
+                if (!isSelectionMode) {
+                    Button(
+                        onClick = onViewClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Green49
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(
+                            text = "Ver",
+                            style = SourceSansSemiBold.copy(fontSize = 13.sp),
+                            color = Color.Black
+                        )
+                    }
                 }
             }
         }

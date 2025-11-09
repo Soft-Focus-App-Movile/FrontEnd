@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.domain.models.EmotionalTag
+import com.softfocus.features.library.domain.models.MockLibraryData
 import com.softfocus.features.library.domain.repositories.LibraryRepository
 import com.softfocus.features.library.presentation.general.browse.components.VideoCategory
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,9 +48,18 @@ class GeneralLibraryViewModel(
 
     private val _favoritesMap = MutableStateFlow<Map<String, String>>(emptyMap())
 
+    // Selection state for psychologist multi-select
+    private val _selectedContentIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedContentIds: StateFlow<Set<String>> = _selectedContentIds.asStateFlow()
+
+    // Assigned content for patient view
+    private val _assignedContent = MutableStateFlow<List<ContentItem>>(emptyList())
+    val assignedContent: StateFlow<List<ContentItem>> = _assignedContent.asStateFlow()
+
     init {
         loadAllContent()
         loadFavorites()
+        loadAssignedContent()
     }
 
     /**
@@ -379,5 +389,70 @@ class GeneralLibraryViewModel(
         } else {
             loadAllContent()
         }
+    }
+
+    // ====================
+    // PSYCHOLOGIST MULTI-SELECT FUNCTIONS
+    // ====================
+
+    /**
+     * Alterna la selección de un contenido (para psicólogos)
+     */
+    fun toggleContentSelection(contentId: String) {
+        _selectedContentIds.value = if (_selectedContentIds.value.contains(contentId)) {
+            _selectedContentIds.value - contentId
+        } else {
+            _selectedContentIds.value + contentId
+        }
+        Log.d(TAG, "toggleContentSelection: ${_selectedContentIds.value.size} items seleccionados")
+    }
+
+    /**
+     * Limpia toda la selección
+     */
+    fun clearSelection() {
+        _selectedContentIds.value = emptySet()
+        Log.d(TAG, "clearSelection: Selección limpiada")
+    }
+
+    /**
+     * Asigna el contenido seleccionado a un paciente
+     * (Mock implementation - solo simula la asignación)
+     */
+    fun assignContentToPatient(patientId: String, patientName: String) {
+        viewModelScope.launch {
+            val selectedIds = _selectedContentIds.value
+            Log.d(TAG, "assignContentToPatient: Asignando ${selectedIds.size} items a $patientName (ID: $patientId)")
+
+            // Aquí iría la llamada real al backend
+            // repository.assignContent(patientId, selectedIds)
+
+            // Simulación: esperar un poco y limpiar selección
+            kotlinx.coroutines.delay(500)
+            clearSelection()
+
+            Log.d(TAG, "assignContentToPatient: ✅ Contenido asignado exitosamente")
+        }
+    }
+
+    /**
+     * Carga el contenido asignado por el terapeuta (para pacientes)
+     * Usa mock data en lugar de API
+     */
+    private fun loadAssignedContent() {
+        _assignedContent.value = MockLibraryData.assignedContent
+        Log.d(TAG, "loadAssignedContent: ${_assignedContent.value.size} items asignados cargados (mock)")
+    }
+
+    /**
+     * Carga contenido usando mock data en lugar de la API
+     * Útil para desarrollo sin backend
+     */
+    fun loadMockContent() {
+        Log.d(TAG, "loadMockContent: Cargando contenido desde mock data")
+        _uiState.value = GeneralLibraryUiState.Success(
+            contentByType = MockLibraryData.allContent,
+            selectedType = _selectedType.value
+        )
     }
 }
