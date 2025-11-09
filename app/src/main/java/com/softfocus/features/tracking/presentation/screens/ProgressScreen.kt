@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.softfocus.features.tracking.presentation.components.ActivityChart
 import com.softfocus.features.tracking.presentation.components.EmptyProgressState
+import com.softfocus.features.tracking.presentation.components.StatisticsCard
 import com.softfocus.features.tracking.presentation.state.TrackingUiState
 import com.softfocus.features.tracking.presentation.viewmodel.TrackingViewModel
 
@@ -26,6 +27,11 @@ fun ProgressScreen(
     viewModel: TrackingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Recargar historial cuando se abre la pantalla
+    LaunchedEffect(Unit) {
+        viewModel.loadCheckInHistory()
+    }
 
     Scaffold(
         topBar = {
@@ -84,7 +90,14 @@ fun ProgressScreen(
                 is TrackingUiState.Success -> {
                     val data = (uiState as TrackingUiState.Success).data
 
-                    if (data.checkInHistory?.checkIns.isNullOrEmpty()) {
+                    if (data.isLoadingHistory) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFF6B8E7C))
+                        }
+                    } else if (data.checkInHistory?.checkIns.isNullOrEmpty()) {
                         EmptyProgressState()
                     } else {
                         Column(
@@ -96,20 +109,87 @@ fun ProgressScreen(
                             Text(
                                 text = "Your Activity",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF6B8E7C)
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // Activity chart
                             data.checkInHistory?.let { history ->
-                                ActivityChart(checkIns = history.checkIns)
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(4.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        ActivityChart(checkIns = history.checkIns)
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
 
                             // Statistics cards
-                            // TODO: Add statistics based on check-ins data
+                            data.checkInHistory?.let { history ->
+                                Text(
+                                    text = "Estadísticas",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF6B8E7C)
+                                )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                StatisticsCard(
+                                    title = "Total de registros",
+                                    value = history.checkIns.size.toString(),
+                                    icon = "📊"
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                val avgEmotional = history.checkIns
+                                    .map { it.emotionalLevel }
+                                    .average()
+                                    .takeIf { !it.isNaN() } ?: 0.0
+
+                                StatisticsCard(
+                                    title = "Nivel emocional promedio",
+                                    value = String.format("%.1f", avgEmotional),
+                                    icon = "😊"
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                val avgEnergy = history.checkIns
+                                    .map { it.energyLevel }
+                                    .average()
+                                    .takeIf { !it.isNaN() } ?: 0.0
+
+                                StatisticsCard(
+                                    title = "Nivel de energía promedio",
+                                    value = String.format("%.1f", avgEnergy),
+                                    icon = "⚡"
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                val avgSleep = history.checkIns
+                                    .map { it.sleepHours }
+                                    .average()
+                                    .takeIf { !it.isNaN() } ?: 0.0
+
+                                StatisticsCard(
+                                    title = "Horas de sueño promedio",
+                                    value = String.format("%.1f", avgSleep),
+                                    icon = "😴"
+                                )
+                            }
                         }
                     }
                 }
@@ -118,10 +198,23 @@ fun ProgressScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = (uiState as TrackingUiState.Error).message,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = (uiState as TrackingUiState.Error).message,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { viewModel.loadCheckInHistory() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF6B8E7C)
+                                )
+                            ) {
+                                Text("Reintentar")
+                            }
+                        }
                     }
                 }
                 is TrackingUiState.Initial -> {

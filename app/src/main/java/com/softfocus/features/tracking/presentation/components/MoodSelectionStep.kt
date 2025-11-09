@@ -1,22 +1,29 @@
 package com.softfocus.features.tracking.presentation.components
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlin.math.cos
-import kotlin.math.sin
+import com.softfocus.R
 
 @Composable
 fun MoodSelectionStep(
@@ -38,15 +45,16 @@ fun MoodSelectionStep(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Mood face
-        Text(
-            text = getMoodEmoji(selectedMood),
-            fontSize = 120.sp
+        // Mood face - Changed from Text to Image
+        Image(
+            painter = painterResource(id = getMoodDrawable(selectedMood)),
+            contentDescription = getMoodText(selectedMood), // For accessibility
+            modifier = Modifier.size(120.dp)
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Mood slider (circular)
+        // Mood slider
         MoodSlider(
             value = selectedMood,
             onValueChange = onMoodSelected
@@ -106,13 +114,14 @@ private fun MoodSlider(
     )
 }
 
-private fun getMoodEmoji(level: Int): String {
+@DrawableRes
+private fun getMoodDrawable(level: Int): Int {
     return when (level) {
-        in 1..2 -> "😢"
-        in 3..4 -> "😕"
-        in 5..6 -> "😐"
-        in 7..8 -> "🙂"
-        else -> "😄"
+        in 1..2 -> R.drawable.calendar_emoji_angry
+        in 3..4 -> R.drawable.calendar_emoji_sad
+        in 5..6 -> R.drawable.calendar_emoji_serius
+        in 7..8 -> R.drawable.calendar_emoji_happy
+        else -> R.drawable.calendar_emoji_joy
     }
 }
 

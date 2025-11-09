@@ -65,7 +65,8 @@ fun DiaryScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add check-in")
             }
-        }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
         Column(
             modifier = Modifier

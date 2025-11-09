@@ -42,16 +42,27 @@ class TrackingViewModel @Inject constructor(
 
             val todayCheckIn = getTodayCheckInUseCase()
             val emotionalCalendar = getEmotionalCalendarUseCase()
+            val checkInHistory = getCheckInsUseCase() // Cargar historial completo
 
-            if (todayCheckIn is Result.Success && emotionalCalendar is Result.Success) {
+            if (todayCheckIn is Result.Success &&
+                emotionalCalendar is Result.Success &&
+                checkInHistory is Result.Success) {
                 _uiState.value = TrackingUiState.Success(
                     TrackingData(
                         todayCheckIn = todayCheckIn.data,
-                        emotionalCalendar = emotionalCalendar.data
+                        emotionalCalendar = emotionalCalendar.data,
+                        checkInHistory = checkInHistory.data
                     )
                 )
             } else {
-                _uiState.value = TrackingUiState.Error("Error loading data")
+                // Intentar cargar datos parciales
+                _uiState.value = TrackingUiState.Success(
+                    TrackingData(
+                        todayCheckIn = (todayCheckIn as? Result.Success)?.data,
+                        emotionalCalendar = (emotionalCalendar as? Result.Success)?.data,
+                        checkInHistory = (checkInHistory as? Result.Success)?.data
+                    )
+                )
             }
         }
     }
@@ -77,7 +88,9 @@ class TrackingViewModel @Inject constructor(
             )) {
                 is Result.Success -> {
                     _checkInFormState.value = CheckInFormState.Success
+                    // Recargar datos después de crear check-in
                     loadTodayCheckIn()
+                    loadCheckInHistory()
                 }
                 is Result.Error -> {
                     _checkInFormState.value = CheckInFormState.Error(result.message)
@@ -103,6 +116,7 @@ class TrackingViewModel @Inject constructor(
             )) {
                 is Result.Success -> {
                     _emotionalCalendarFormState.value = EmotionalCalendarFormState.Success
+                    // Recargar calendario después de crear entrada
                     loadEmotionalCalendar()
                 }
                 is Result.Error -> {
@@ -127,7 +141,7 @@ class TrackingViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
-                    // Handle error
+                    // Handle error silently or show message
                 }
             }
         }
@@ -161,20 +175,42 @@ class TrackingViewModel @Inject constructor(
         pageSize: Int? = null
     ) {
         viewModelScope.launch {
+            _uiState.update { state ->
+                if (state is TrackingUiState.Success) {
+                    state.copy(data = state.data.copy(isLoadingHistory = true))
+                } else {
+                    TrackingUiState.Loading
+                }
+            }
+
             when (val result = getCheckInsUseCase(startDate, endDate, pageNumber, pageSize)) {
                 is Result.Success -> {
                     _uiState.update { state ->
                         if (state is TrackingUiState.Success) {
                             state.copy(
-                                data = state.data.copy(checkInHistory = result.data)
+                                data = state.data.copy(
+                                    checkInHistory = result.data,
+                                    isLoadingHistory = false
+                                )
                             )
                         } else {
-                            TrackingUiState.Success(TrackingData(checkInHistory = result.data))
+                            TrackingUiState.Success(
+                                TrackingData(
+                                    checkInHistory = result.data,
+                                    isLoadingHistory = false
+                                )
+                            )
                         }
                     }
                 }
                 is Result.Error -> {
-                    // Handle error
+                    _uiState.update { state ->
+                        if (state is TrackingUiState.Success) {
+                            state.copy(data = state.data.copy(isLoadingHistory = false))
+                        } else {
+                            TrackingUiState.Error(result.message)
+                        }
+                    }
                 }
             }
         }

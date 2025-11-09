@@ -1,9 +1,6 @@
 package com.softfocus.features.tracking.presentation.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +18,8 @@ fun SymptomsSelectionStep(
     onSymptomsSelected: (List<String>) -> Unit,
     onNext: () -> Unit
 ) {
+    var symptomsText by remember { mutableStateOf(selectedSymptoms.joinToString(", ")) }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -33,48 +32,47 @@ fun SymptomsSelectionStep(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
-        // Symptoms list
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(symptoms) { symptom ->
-                val isSelected = selectedSymptoms.contains(symptom)
-
-                OutlinedButton(
-                    onClick = {
-                        onSymptomsSelected(
-                            if (isSelected) {
-                                selectedSymptoms - symptom
-                            } else {
-                                selectedSymptoms + symptom
-                            }
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if (isSelected) Color.White else Color.Transparent,
-                        contentColor = if (isSelected) Color(0xFF6B8E7C) else Color.White
-                    ),
-                    border = BorderStroke(2.dp, Color.White)
-                ) {
-                    Text(
-                        text = symptom,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
+        // Text field para escribir síntomas
+        OutlinedTextField(
+            value = symptomsText,
+            onValueChange = { symptomsText = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            placeholder = {
+                Text(
+                    "Ejemplo: mucha energia, felicidad, ansiedad...",
+                    color = Color.White.copy(alpha = 0.6f)
+                )
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White.copy(alpha = 0.2f),
+                unfocusedContainerColor = Color.White.copy(alpha = 0.2f),
+                focusedBorderColor = Color.White,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                cursorColor = Color.White
+            ),
+            shape = RoundedCornerShape(12.dp),
+            maxLines = 8
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = onNext,
+            onClick = {
+                // Convertir el texto en lista de síntomas
+                val symptomsList = if (symptomsText.isNotBlank()) {
+                    listOf(symptomsText)
+                } else {
+                    emptyList()
+                }
+                onSymptomsSelected(symptomsList)
+                onNext()
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

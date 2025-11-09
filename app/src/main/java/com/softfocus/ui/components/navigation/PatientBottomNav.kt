@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Bookmarks
@@ -112,25 +113,26 @@ fun PatientBottomNav(navController: NavController) {
 
         NavigationBarItem(
             icon = {
-                BottomNavIcon(isSelected = false) {
+                BottomNavIcon(isSelected = currentRoute == Route.Diary.path) {
                     Icon(
-                        imageVector = Icons.Outlined.Book,
+                        imageVector = if (currentRoute == Route.Diary.path) Icons.Filled.Book else Icons.Outlined.Book,
                         contentDescription = "Diario",
                         modifier = Modifier.size(24.dp)
                     )
                 }
             },
             label = { Text("Diario", fontSize = 12.sp, style = SourceSansRegular) },
-            selected = false,
-            onClick = { /* No implementado aún */ },
-            enabled = false,
+            selected = currentRoute == Route.Progress.path,
+            onClick = {
+                if (currentRoute != Route.Diary.path) {
+                    navController.navigate(Route.Diary.path)
+                }
+            },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Green29,
                 selectedTextColor = Green29,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
-                disabledIconColor = Color.LightGray,
-                disabledTextColor = Color.LightGray,
                 indicatorColor = Color.Transparent
             )
         )

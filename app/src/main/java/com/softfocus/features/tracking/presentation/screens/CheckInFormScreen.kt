@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.softfocus.features.tracking.presentation.components.*
 import com.softfocus.features.tracking.presentation.state.CheckInFormState
+import com.softfocus.features.tracking.presentation.state.EmotionalCalendarFormState
 import com.softfocus.features.tracking.presentation.viewmodel.TrackingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,10 +30,12 @@ fun CheckInFormScreen(
     viewModel: TrackingViewModel = hiltViewModel()
 ) {
     val formState by viewModel.checkInFormState.collectAsState()
+    val emotionalCalendarFormState by viewModel.emotionalCalendarFormState.collectAsState()
     var currentStep by remember { mutableStateOf(0) }
 
     // Form data
     var moodLevel by remember { mutableStateOf(5) }
+    var selectedMoodEmoji by remember { mutableStateOf("😐") }
     var moodDescription by remember { mutableStateOf("") }
     var selectedCategories by remember { mutableStateOf<List<String>>(emptyList()) }
     var selectedSymptoms by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -43,10 +46,13 @@ fun CheckInFormScreen(
 
     val totalSteps = 6
 
-    LaunchedEffect(formState) {
-        if (formState is CheckInFormState.Success) {
+    // Estados de éxito combinados
+    LaunchedEffect(formState, emotionalCalendarFormState) {
+        if (formState is CheckInFormState.Success &&
+            emotionalCalendarFormState is EmotionalCalendarFormState.Success) {
             onNavigateToDiary?.invoke() ?: onNavigateBack()
             viewModel.resetCheckInFormState()
+            viewModel.resetEmotionalCalendarFormState()
         }
     }
 
@@ -91,11 +97,21 @@ fun CheckInFormScreen(
                 when (currentStep) {
                     0 -> MoodSelectionStep(
                         selectedMood = moodLevel,
-                        onMoodSelected = { moodLevel = it },
+                        onMoodSelected = { level ->
+                            moodLevel = level
+                            // Actualizar emoji según el nivel
+                            selectedMoodEmoji = when (level) {
+                                in 1..2 -> "😢"
+                                in 3..4 -> "😕"
+                                in 5..6 -> "😐"
+                                in 7..8 -> "🙂"
+                                else -> "😄"
+                            }
+                        },
                         onNext = { currentStep++ }
                     )
                     1 -> CategorySelectionStep(
-                        title = "¿Qué hizo que hoy fuera realmente terrible?",
+                        title = "¿Qué hizo que hoy fuera así?",
                         categories = listOf("Trabajo", "Pareja", "Familia"),
                         selectedCategories = selectedCategories,
                         onCategoriesSelected = { selectedCategories = it },
@@ -109,16 +125,7 @@ fun CheckInFormScreen(
                         onSkip = { currentStep++ }
                     )
                     3 -> SymptomsSelectionStep(
-                        symptoms = listOf(
-                            "😰 Ansiedad",
-                            "😫 Cansancio",
-                            "😠 Irritabilidad",
-                            "😢 Tristeza",
-                            "😴 Estrés",
-                            "😌 Insomnio",
-                            "😰 Dolor físico",
-                            "⚪ Cambio de apetito"
-                        ),
+                        symptoms = emptyList(), // Ya no se usa
                         selectedSymptoms = selectedSymptoms,
                         onSymptomsSelected = { selectedSymptoms = it },
                         onNext = { currentStep++ }
@@ -143,6 +150,7 @@ fun CheckInFormScreen(
                                 else -> "Me siento excelente"
                             }
 
+                            // 1. Guardar CHECK-IN
                             viewModel.createCheckIn(
                                 emotionalLevel = emotionalLevel,
                                 energyLevel = energyLevel,
@@ -151,8 +159,20 @@ fun CheckInFormScreen(
                                 symptoms = selectedSymptoms,
                                 notes = notes.ifBlank { null }
                             )
+
+                            // 2. Guardar EMOTIONAL CALENDAR
+                            val currentDate = java.time.LocalDateTime.now()
+                                .format(java.time.format.DateTimeFormatter.ISO_DATE_TIME)
+
+                            viewModel.createEmotionalCalendarEntry(
+                                date = currentDate,
+                                emotionalEmoji = selectedMoodEmoji,
+                                moodLevel = moodLevel,
+                                emotionalTags = selectedCategories
+                            )
                         },
-                        isLoading = formState is CheckInFormState.Loading
+                        isLoading = formState is CheckInFormState.Loading ||
+                                emotionalCalendarFormState is EmotionalCalendarFormState.Loading
                     )
                 }
 
