@@ -1,5 +1,6 @@
 package com.softfocus.features.library.presentation.general.browse
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,19 +37,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.softfocus.core.data.local.UserSession
+import com.softfocus.features.auth.domain.models.UserType
+import com.softfocus.features.library.assignments.presentation.AssignedContentScreen
+import com.softfocus.features.library.assignments.presentation.AssignmentsViewModel
+import com.softfocus.features.library.assignments.presentation.di.AssignmentsPresentationModule
 import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.domain.models.EmotionalTag
-import com.softfocus.features.library.presentation.di.libraryViewModel
+import com.softfocus.features.library.presentation.di.libraryViewModelWithTherapy
+import com.softfocus.features.library.presentation.general.browse.components.AssignPatientBottomSheet
+import com.softfocus.features.library.presentation.general.browse.components.AssignTaskButton
 import com.softfocus.features.library.presentation.general.browse.components.CategoryIcons
-import com.softfocus.features.library.presentation.general.browse.components.ContentCard
 import com.softfocus.features.library.presentation.general.browse.components.FilterBottomSheet
+import com.softfocus.features.library.presentation.general.browse.components.LibraryContent
+import com.softfocus.features.library.presentation.general.browse.components.LibraryTabs
+import com.softfocus.features.library.presentation.general.browse.components.LibraryTopBar
 import com.softfocus.features.library.presentation.general.browse.components.SearchBarWithFilter
-import com.softfocus.features.library.presentation.general.browse.components.VideoCard
 import com.softfocus.features.library.presentation.general.browse.components.VideoCategory
 import com.softfocus.features.library.presentation.shared.getDisplayName
 import com.softfocus.ui.theme.*
@@ -69,19 +80,71 @@ import com.softfocus.ui.theme.*
 @Composable
 fun GeneralLibraryScreen(
     modifier: Modifier = Modifier,
-    viewModel: GeneralLibraryViewModel = libraryViewModel { GeneralLibraryViewModel(it) },
+    viewModel: GeneralLibraryViewModel = libraryViewModelWithTherapy { libRepo, therapyRepo ->
+        GeneralLibraryViewModel(libRepo, therapyRepo)
+    },
     onContentClick: (ContentItem) -> Unit = {},
 ) {
+    val context = LocalContext.current
+    val userSession = remember { UserSession(context) }
+    val userType = remember { userSession.getUser()?.userType }
+
     val uiState by viewModel.uiState.collectAsState()
     val selectedType by viewModel.selectedType.collectAsState()
     val selectedEmotion by viewModel.selectedEmotion.collectAsState()
     val selectedVideoCategory by viewModel.selectedVideoCategory.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
+    val selectedContentIds by viewModel.selectedContentIds.collectAsState()
+    val patients by viewModel.patients.collectAsState()
+    val patientsLoading by viewModel.patientsLoading.collectAsState()
+    val patientsError by viewModel.patientsError.collectAsState()
+
     var searchQuery by remember { mutableStateOf("") }
+    var showAssignBottomSheet by remember { mutableStateOf(false) }
+
+    val isPsychologist = userType == UserType.PSYCHOLOGIST
+    val isSelectionMode = isPsychologist && selectedContentIds.isNotEmpty()
+
+    val hasTherapist = remember { mutableStateOf<Boolean?>(null) }
+
+    LaunchedEffect(Unit) {
+        if (!isPsychologist) {
+            val relationshipResult = viewModel.getMyRelationship()
+            relationshipResult.onSuccess { relationship ->
+                hasTherapist.value = relationship != null && relationship.isActive
+            }.onFailure {
+                hasTherapist.value = false
+            }
+        }
+    }
+
+    LaunchedEffect(selectedType) {
+        if (selectedType == ContentType.Weather) {
+            val location = com.softfocus.core.utils.LocationHelper.getCurrentLocation(context)
+            val latitude = location?.latitude ?: -12.0464
+            val longitude = location?.longitude ?: -77.0428
+            viewModel.loadWeather(latitude, longitude)
+        }
+    }
+
+    val isPatient by remember { androidx.compose.runtime.derivedStateOf { hasTherapist.value == true } }
+
+    val assignmentsViewModel: AssignmentsViewModel? = if (isPatient) {
+        val retrofit = remember { com.softfocus.features.library.presentation.di.getRetrofitInstance() }
+        val factory = remember { AssignmentsPresentationModule.provideAssignmentsViewModelFactory(context, retrofit) }
+        viewModel(factory = factory)
+    } else null
+
 
     LaunchedEffect(searchQuery) {
         kotlinx.coroutines.delay(500)
         viewModel.searchContent(searchQuery)
+    }
+
+    LaunchedEffect(isPatient, assignmentsViewModel) {
+        if (isPatient && assignmentsViewModel != null) {
+            assignmentsViewModel.loadAssignedContent(completed = null)
+        }
     }
 
     GeneralLibraryScreenContent(
@@ -92,6 +155,11 @@ fun GeneralLibraryScreen(
         selectedVideoCategory = selectedVideoCategory,
         favoriteIds = favoriteIds,
         searchQuery = searchQuery,
+        userType = userType,
+        isPatient = isPatient,
+        isSelectionMode = isSelectionMode,
+        selectedContentIds = selectedContentIds,
+        assignmentsViewModel = assignmentsViewModel,
         onSearchQueryChange = { searchQuery = it },
         onTabSelected = { viewModel.selectContentType(it) },
         onFilterClear = { viewModel.clearEmotionFilter() },
@@ -99,8 +167,44 @@ fun GeneralLibraryScreen(
         onVideoCategorySelected = { viewModel.loadContentByVideoCategory(it) },
         onRetry = { viewModel.retry() },
         onFavoriteClick = { viewModel.toggleFavorite(it) },
-        onContentClick = onContentClick
+        onContentClick = {
+            if (isSelectionMode) {
+                viewModel.toggleContentSelection(it.id)
+            } else {
+                onContentClick(it)
+            }
+        },
+        onContentSelectionToggle = {
+            viewModel.toggleContentSelection(it.id)
+        },
+        onAssignTaskClick = {
+            viewModel.loadPatients()
+            showAssignBottomSheet = true
+        }
     )
+
+    if (showAssignBottomSheet && isPsychologist) {
+        AssignPatientBottomSheet(
+            selectedCount = selectedContentIds.size,
+            patients = patients,
+            isLoading = patientsLoading,
+            errorMessage = patientsError,
+            onPatientSelected = { patientId, patientName ->
+                viewModel.assignContentToPatients(
+                    patientIds = listOf(patientId),
+                    notes = null,
+                    onSuccess = {
+                        Toast.makeText(context, "Contenido asignado a $patientName", Toast.LENGTH_SHORT).show()
+                    },
+                    onError = { error ->
+                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            },
+            onDismiss = { showAssignBottomSheet = false },
+            onRetry = { viewModel.loadPatients() }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,209 +224,124 @@ fun GeneralLibraryScreenContent(
     onFilterClear: () -> Unit = {},
     onEmotionSelected: (EmotionalTag) -> Unit = {},
     onVideoCategorySelected: (VideoCategory) -> Unit = {},
-    onRetry: () -> Unit = {}
+    onRetry: () -> Unit = {},
+    userType: UserType? = null,
+    isPatient: Boolean = false,
+    isSelectionMode: Boolean = false,
+    selectedContentIds: Set<String> = emptySet(),
+    assignmentsViewModel: AssignmentsViewModel? = null,
+    onContentSelectionToggle: (ContentItem) -> Unit = {},
+    onAssignTaskClick: () -> Unit = {}
 ) {
     var showFilterSheet by remember { mutableStateOf(false) }
+    var currentTab by remember { mutableStateOf("content") }
+
+    val isPsychologist = userType == UserType.PSYCHOLOGIST
+
+    val availableTabs = remember(userType) {
+        when (userType) {
+            UserType.PSYCHOLOGIST -> listOf(ContentType.Movie, ContentType.Music, ContentType.Video)
+            else -> ContentType.entries.toList()
+        }
+    }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Biblioteca",
-                        style = CrimsonSemiBold.copy(fontSize = 32.sp),
-                        color = Green49
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
+            LibraryTopBar(
+                isPsychologist = isPsychologist,
+                isSelectionMode = isSelectionMode,
+                onCancelSelection = {
+                    // Clear all selections
+                    selectedContentIds.toList().forEach { id ->
+                        uiState.let { state ->
+                            if (state is GeneralLibraryUiState.Success) {
+                                state.getSelectedContent().find { it.id == id }?.let {
+                                    onContentSelectionToggle(it)
+                                }
+                            }
+                        }
+                    }
+                }
             )
         },
+        floatingActionButton = {
+            if (isPsychologist && isSelectionMode) {
+                AssignTaskButton(
+                    selectedCount = selectedContentIds.size,
+                    onClick = onAssignTaskClick
+                )
+            }
+        },
         modifier = modifier,
-        containerColor = Color.Black // Fondo de pantalla negro
+        containerColor = Color.Black
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Tabs de tipos de contenido
-            val selectedTabIndex = ContentType.entries.indexOf(selectedType)
-            ScrollableTabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = Color.Transparent, // Fondo transparente para los tabs
-                contentColor = Green65,
-                edgePadding = 16.dp,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = Green65 // Color del indicador
-                    )
-                },
-                divider = { } // Sin línea divisora
-            ) {
-                ContentType.entries.forEach { type ->
-                    val isSelected = selectedType == type
-                    Tab(
-                        selected = isSelected,
-                        onClick = { onTabSelected(type) },
-                        text = {
-                            Text(
-                                text = type.getDisplayName(),
-                                style = SourceSansRegular.copy(fontSize = 15.sp),
-                                color = if (isSelected) Green65 else Color.White
-                            )
-                        }
+            LibraryTabs(
+                isPatient = isPatient,
+                currentTab = currentTab,
+                onTabChange = { currentTab = it },
+                selectedType = selectedType,
+                availableTabs = availableTabs,
+                onContentTypeSelected = onTabSelected
+            )
+
+            when (selectedType) {
+                ContentType.Video -> {
+                    CategoryIcons(
+                        selectedCategory = selectedVideoCategory,
+                        onCategoryClick = onVideoCategorySelected,
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Para videos: mostrar iconos de categorías
-            // Para otros tipos: mostrar barra de búsqueda con filtro
-            if (selectedType == ContentType.Video) {
-                CategoryIcons(
-                    selectedCategory = selectedVideoCategory,
-                    onCategoryClick = onVideoCategorySelected,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-            } else {
-                // Barra de búsqueda con filtro
-                SearchBarWithFilter(
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = onSearchQueryChange,
-                    onFilterClick = { showFilterSheet = true }
-                )
+                ContentType.Weather -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                else -> {
+                    SearchBarWithFilter(
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = onSearchQueryChange,
+                        onFilterClick = { showFilterSheet = true }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Contenido según estado
-            when (uiState) {
-                is GeneralLibraryUiState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Green29)
+            if (isPatient && currentTab == "assignments" && assignmentsViewModel != null) {
+                AssignedContentScreen(
+                    viewModel = assignmentsViewModel,
+                    onContentClick = { contentId, contentType ->
+                        onContentClick(ContentItem(
+                            id = contentId,
+                            externalId = contentId,
+                            type = contentType,
+                            title = "",
+                            overview = null,
+                            posterUrl = null,
+                            rating = null,
+                            duration = null,
+                            genres = emptyList()
+                        ))
                     }
-                }
-
-                is GeneralLibraryUiState.Success -> {
-                    val content = uiState.getSelectedContent()
-
-                    if (content.isEmpty()) {
-                        // Mensaje cuando no hay contenido
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(32.dp)
-                            ) {
-                                Text(
-                                    text = "No se encontró contenido",
-                                    style = SourceSansSemiBold.copy(fontSize = 18.sp),
-                                    color = Gray828,
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = if (searchQuery.isNotBlank())
-                                        "Intenta con otra búsqueda"
-                                    else if (selectedType == ContentType.Video)
-                                        "Selecciona una categoría para ver videos"
-                                    else
-                                        "Intenta con otro tipo de contenido o filtro",
-                                    style = SourceSansRegular.copy(fontSize = 14.sp),
-                                    color = Gray828,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    } else {
-                        // Para Videos: usar lista vertical con VideoCard
-                        // Para otros tipos: usar grilla con ContentCard
-                        if (selectedType == ContentType.Video) {
-                            LazyColumn(
-                                contentPadding = PaddingValues(vertical = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                items(content) { item ->
-                                    VideoCard(
-                                        content = item,
-                                        isFavorite = favoriteIds.contains(item.externalId),
-                                        onFavoriteClick = { onFavoriteClick(item) },
-                                        onViewClick = { onContentClick(item) }
-                                    )
-                                }
-                            }
-                        } else {
-                            // Grilla de contenido para Movies, Music, Places
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(content) { item ->
-                                    ContentCard(
-                                        content = item,
-                                        isFavorite = favoriteIds.contains(item.externalId),
-                                        onFavoriteClick = { onFavoriteClick(item) },
-                                        onClick = { onContentClick(item) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                is GeneralLibraryUiState.Error -> {
-                    // Estado de error
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier
-                                .padding(32.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Error",
-                                style = CrimsonBold.copy(fontSize = 20.sp),
-                                color = Green29
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = uiState.message,
-                                style = SourceSansRegular.copy(fontSize = 14.sp),
-                                color = Gray828,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { onRetry() },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Green29
-                                )
-                            ) {
-                                Text(
-                                    text = "Reintentar",
-                                    style = SourceSansSemiBold
-                                )
-                            }
-                        }
-                    }
-                }
+                )
+            } else {
+                LibraryContent(
+                    uiState = uiState,
+                    selectedType = selectedType,
+                    searchQuery = searchQuery,
+                    favoriteIds = favoriteIds,
+                    selectedContentIds = selectedContentIds,
+                    isSelectionMode = isSelectionMode,
+                    isPsychologist = isPsychologist,
+                    onContentClick = onContentClick,
+                    onContentLongClick = onContentSelectionToggle,
+                    onFavoriteClick = onFavoriteClick,
+                    onRetry = onRetry
+                )
             }
         }
     }
@@ -408,7 +427,7 @@ private fun GeneralLibraryScreenPreview() {
                     ),
                     ContentType.Music to emptyList(),
                     ContentType.Video to emptyList(),
-                    ContentType.Place to emptyList()
+                    ContentType.Weather to emptyList()
                 ),
                 selectedType = ContentType.Movie
             ),
@@ -458,7 +477,7 @@ private fun GeneralLibraryScreenEmptyPreview() {
                     ContentType.Movie to emptyList(),
                     ContentType.Music to emptyList(),
                     ContentType.Video to emptyList(),
-                    ContentType.Place to emptyList()
+                    ContentType.Weather to emptyList()
                 ),
                 selectedType = ContentType.Movie
             ),

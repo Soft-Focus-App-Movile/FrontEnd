@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.domain.models.EmotionalTag
+import com.softfocus.features.library.domain.models.MockLibraryData
 import com.softfocus.features.library.domain.repositories.LibraryRepository
 import com.softfocus.features.library.presentation.general.browse.components.VideoCategory
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,17 +14,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel para la pantalla de biblioteca general
- *
- * Maneja el estado de la pantalla principal de biblioteca con tabs de:
- * - Películas
- * - Música
- * - Videos
- * - Lugares
- */
 class GeneralLibraryViewModel(
-    private val repository: LibraryRepository
+    private val repository: LibraryRepository,
+    private val therapyRepository: com.softfocus.features.therapy.domain.repositories.TherapyRepository
 ) : ViewModel() {
 
     companion object {
@@ -47,14 +40,23 @@ class GeneralLibraryViewModel(
 
     private val _favoritesMap = MutableStateFlow<Map<String, String>>(emptyMap())
 
+    private val _selectedContentIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedContentIds: StateFlow<Set<String>> = _selectedContentIds.asStateFlow()
+
+    private val _patients = MutableStateFlow<List<com.softfocus.features.therapy.domain.models.PatientDirectory>>(emptyList())
+    val patients: StateFlow<List<com.softfocus.features.therapy.domain.models.PatientDirectory>> = _patients.asStateFlow()
+
+    private val _patientsLoading = MutableStateFlow(false)
+    val patientsLoading: StateFlow<Boolean> = _patientsLoading.asStateFlow()
+
+    private val _patientsError = MutableStateFlow<String?>(null)
+    val patientsError: StateFlow<String?> = _patientsError.asStateFlow()
+
     init {
         loadAllContent()
         loadFavorites()
     }
 
-    /**
-     * Carga contenido recomendado para todos los tipos
-     */
     private fun loadAllContent() {
         viewModelScope.launch {
             Log.d(TAG, "loadAllContent: Iniciando carga de contenido")
@@ -64,8 +66,10 @@ class GeneralLibraryViewModel(
                 val contentMap = mutableMapOf<ContentType, List<ContentItem>>()
                 val errors = mutableListOf<String>()
 
-                // Cargar contenido para cada tipo - ESPERAR cada llamada
                 for (type in ContentType.values()) {
+                    if (type == ContentType.Weather) {
+                        continue
+                    }
                     Log.d(TAG, "loadAllContent: Cargando contenido para $type")
 
                     val result = repository.getRecommendedContent(
@@ -112,9 +116,6 @@ class GeneralLibraryViewModel(
         }
     }
 
-    /**
-     * Carga contenido filtrado por emoción
-     */
     fun loadContentByEmotion(emotion: EmotionalTag) {
         viewModelScope.launch {
             Log.d(TAG, "loadContentByEmotion: Iniciando carga para emoción $emotion")
@@ -125,8 +126,10 @@ class GeneralLibraryViewModel(
                 val contentMap = mutableMapOf<ContentType, List<ContentItem>>()
                 val errors = mutableListOf<String>()
 
-                // Cargar contenido para cada tipo con filtro de emoción - ESPERAR cada llamada
                 for (type in ContentType.values()) {
+                    if (type == ContentType.Weather) {
+                        continue
+                    }
                     Log.d(TAG, "loadContentByEmotion: Cargando $type con emoción $emotion")
 
                     val result = repository.getRecommendedByEmotion(
@@ -170,17 +173,11 @@ class GeneralLibraryViewModel(
         }
     }
 
-    /**
-     * Limpia el filtro de emoción y recarga todo el contenido
-     */
     fun clearEmotionFilter() {
         _selectedEmotion.value = null
         loadAllContent()
     }
 
-    /**
-     * Carga contenido filtrado por categoría de video
-     */
     fun loadContentByVideoCategory(category: VideoCategory) {
         viewModelScope.launch {
             Log.d(TAG, "loadContentByVideoCategory: Iniciando búsqueda para categoría ${category.displayName}")
@@ -258,21 +255,14 @@ class GeneralLibraryViewModel(
         }
     }
 
-    /**
-     * Cambia el tipo de contenido seleccionado
-     */
     fun selectContentType(type: ContentType) {
         _selectedType.value = type
-        // Actualizar el estado con el nuevo tipo seleccionado
         val currentState = _uiState.value
         if (currentState is GeneralLibraryUiState.Success) {
             _uiState.value = currentState.copy(selectedType = type)
         }
     }
 
-    /**
-     * Carga los IDs de favoritos del usuario
-     */
     private fun loadFavorites() {
         viewModelScope.launch {
             repository.getFavorites().onSuccess { favorites ->
@@ -282,9 +272,6 @@ class GeneralLibraryViewModel(
         }
     }
 
-    /**
-     * Alterna el estado de favorito de un contenido
-     */
     fun toggleFavorite(content: ContentItem) {
         viewModelScope.launch {
             val isFavorite = _favoriteIds.value.contains(content.externalId)
@@ -309,14 +296,140 @@ class GeneralLibraryViewModel(
         }
     }
 
-    /**
-     * Reintenta cargar el contenido
-     */
+    suspend fun getMyRelationship(): Result<com.softfocus.features.therapy.domain.models.TherapeuticRelationship?> {
+        return therapyRepository.getMyRelationship()
+    }
+
+    fun loadWeather(latitude: Double, longitude: Double) {
+        viewModelScope.launch {
+            try {
+                repository.getWeather(latitude, longitude).onSuccess { weather ->
+                    val currentState = _uiState.value
+                    if (currentState is GeneralLibraryUiState.Success) {
+                        _uiState.value = currentState.copy(weatherCondition = weather)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "loadWeather: Error: ${e.message}", e)
+            }
+        }
+    }
+
     fun retry() {
         if (_selectedEmotion.value != null) {
             loadContentByEmotion(_selectedEmotion.value!!)
         } else {
             loadAllContent()
+        }
+    }
+
+    // ====================
+    // PSYCHOLOGIST MULTI-SELECT FUNCTIONS
+    // ====================
+
+    /**
+     * Alterna la selección de un contenido (para psicólogos)
+     */
+    fun toggleContentSelection(contentId: String) {
+        _selectedContentIds.value = if (_selectedContentIds.value.contains(contentId)) {
+            _selectedContentIds.value - contentId
+        } else {
+            _selectedContentIds.value + contentId
+        }
+        Log.d(TAG, "toggleContentSelection: ${_selectedContentIds.value.size} items seleccionados")
+    }
+
+    fun clearSelection() {
+        _selectedContentIds.value = emptySet()
+        Log.d(TAG, "clearSelection: Selección limpiada")
+    }
+
+    fun loadPatients() {
+        viewModelScope.launch {
+            _patientsLoading.value = true
+            _patientsError.value = null
+
+            therapyRepository.getMyPatients().fold(
+                onSuccess = { patientList ->
+                    _patients.value = patientList
+                    _patientsLoading.value = false
+                    Log.d(TAG, "loadPatients: ${patientList.size} pacientes cargados")
+                },
+                onFailure = { error ->
+                    _patientsError.value = error.message ?: "Error al cargar pacientes"
+                    _patientsLoading.value = false
+                    Log.e(TAG, "loadPatients: Error: ${error.message}", error)
+                }
+            )
+        }
+    }
+
+    /**
+     * Asigna el contenido seleccionado a múltiples pacientes
+     */
+    fun assignContentToPatients(
+        patientIds: List<String>,
+        notes: String? = null,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            val selectedIds = _selectedContentIds.value
+            Log.d(TAG, "assignContentToPatients: Asignando ${selectedIds.size} items a ${patientIds.size} paciente(s)")
+
+            if (selectedIds.isEmpty()) {
+                onError("No hay contenido seleccionado")
+                return@launch
+            }
+
+            val currentState = _uiState.value
+            if (currentState !is GeneralLibraryUiState.Success) {
+                onError("Estado inválido")
+                return@launch
+            }
+
+            val allContent = currentState.contentByType.values.flatten()
+
+            try {
+                var successCount = 0
+                var errorCount = 0
+
+                for (contentId in selectedIds) {
+                    val content = allContent.find { it.id == contentId || it.externalId == contentId }
+                    if (content == null) {
+                        Log.w(TAG, "assignContentToPatients: Contenido no encontrado: $contentId")
+                        errorCount++
+                        continue
+                    }
+
+                    repository.assignContent(
+                        patientIds = patientIds,
+                        contentId = content.externalId,
+                        contentType = content.type,
+                        notes = notes
+                    ).fold(
+                        onSuccess = { assignmentIds ->
+                            Log.d(TAG, "assignContentToPatients: ✅ ${assignmentIds.size} asignaciones creadas para ${content.title}")
+                            successCount++
+                        },
+                        onFailure = { error ->
+                            Log.e(TAG, "assignContentToPatients: ❌ Error asignando ${content.title}: ${error.message}")
+                            errorCount++
+                        }
+                    )
+                }
+
+                if (errorCount == 0) {
+                    clearSelection()
+                    onSuccess()
+                    Log.d(TAG, "assignContentToPatients: ✅ Todas las asignaciones exitosas ($successCount)")
+                } else {
+                    onError("$successCount exitosas, $errorCount fallidas")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "assignContentToPatients: ❌ Excepción: ${e.message}", e)
+                onError(e.message ?: "Error al asignar contenido")
+            }
         }
     }
 }

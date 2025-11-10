@@ -1,11 +1,15 @@
 package com.softfocus.features.library.presentation.general.browse.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.AssistChip
@@ -36,24 +40,34 @@ import com.softfocus.ui.theme.SourceSansLight
  *
  * @param content Item de contenido a mostrar
  * @param isFavorite Si el contenido está marcado como favorito
+ * @param isSelected Si el contenido está seleccionado (modo psicólogo)
+ * @param isSelectionMode Si está en modo selección (mostrar overlay)
  * @param onFavoriteClick Callback al hacer clic en el botón de favorito
  * @param onClick Callback al hacer clic en el card
+ * @param onLongClick Callback al mantener presionado el card (para activar modo selección)
  * @param modifier Modificador opcional
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ContentCard(
     content: ContentItem,
     isFavorite: Boolean = false,
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
     onFavoriteClick: () -> Unit = {},
     onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .width(160.dp)
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
     ) {
-        // 1. Imagen con botón de favorito
+        // 1. Imagen con botón de favorito o indicador de selección
         Box(
             modifier = Modifier
                 .width(160.dp)
@@ -69,20 +83,40 @@ fun ContentCard(
                     .clip(RoundedCornerShape(12.dp))
             )
 
-            // Botón de favorito en esquina superior derecha
-            IconButton(
-                onClick = onFavoriteClick,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-                    .size(32.dp)
-            ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
-                    tint = if (isFavorite) Green49 else Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
+            // Overlay de selección cuando está en modo selección
+            if (isSelectionMode && isSelected) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Green49.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CheckCircle,
+                        contentDescription = "Seleccionado",
+                        tint = Green49,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+            }
+
+            // Botón de favorito en esquina superior derecha (solo si NO está en modo selección)
+            if (!isSelectionMode) {
+                IconButton(
+                    onClick = onFavoriteClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                        tint = if (isFavorite) Green49 else Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 
