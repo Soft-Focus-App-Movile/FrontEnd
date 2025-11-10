@@ -8,6 +8,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.softfocus.features.psychologist.domain.models.InvitationCode
 import com.softfocus.features.psychologist.domain.repositories.PsychologistRepository
+import com.softfocus.features.therapy.domain.models.PatientDirectory
+import com.softfocus.features.therapy.domain.usecases.GetMyPatientsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,11 +17,15 @@ import kotlinx.coroutines.launch
 
 class PsychologistHomeViewModel(
     private val psychologistRepository: PsychologistRepository,
+    private val getMyPatientsUseCase: GetMyPatientsUseCase,
     private val context: Context
 ) : ViewModel() {
 
     private val _invitationCode = MutableStateFlow<InvitationCode?>(null)
     val invitationCode: StateFlow<InvitationCode?> = _invitationCode.asStateFlow()
+
+    private val _patients = MutableStateFlow<List<PatientDirectory>>(emptyList())
+    val patients: StateFlow<List<PatientDirectory>> = _patients.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -29,6 +35,7 @@ class PsychologistHomeViewModel(
 
     init {
         loadInvitationCode()
+        loadPatients()
     }
 
     private fun loadInvitationCode() {
@@ -64,5 +71,20 @@ class PsychologistHomeViewModel(
         val shareIntent = Intent.createChooser(sendIntent, "Compartir código")
         shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(shareIntent)
+    }
+
+    private fun loadPatients() {
+        viewModelScope.launch {
+            val result = getMyPatientsUseCase()
+            result.onSuccess { patientsList ->
+                _patients.value = patientsList
+            }.onFailure { exception ->
+                _patients.value = emptyList()
+            }
+        }
+    }
+
+    fun refreshPatients() {
+        loadPatients()
     }
 }

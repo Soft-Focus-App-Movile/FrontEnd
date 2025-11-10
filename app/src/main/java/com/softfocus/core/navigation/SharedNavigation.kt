@@ -89,6 +89,12 @@ fun NavGraphBuilder.sharedNavigation(
                             psychologistHomeViewModel,
                             onNavigateToNotifications = {
                                 navController.navigate(Route.Notifications.path)
+                            },
+                            onNavigateToPatientList = {
+                                navController.navigate(Route.PsychologistPatientList.path)
+                            },
+                            onNavigateToPatientDetail = { patientId ->
+                                // TODO: Implementar navegación a detalle del paciente
                             }
                         )
                     }

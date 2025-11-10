@@ -36,9 +36,14 @@ import com.softfocus.ui.theme.Green65
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PsychologistHomeScreen(viewModel: PsychologistHomeViewModel,
-                           onNavigateToNotifications: () -> Unit = {}) {
+fun PsychologistHomeScreen(
+    viewModel: PsychologistHomeViewModel,
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToPatientList: () -> Unit = {},
+    onNavigateToPatientDetail: (String) -> Unit = {}
+) {
     val invitationCode = viewModel.invitationCode.collectAsState()
+    val patients by viewModel.patients.collectAsState()
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -151,11 +156,12 @@ fun PsychologistHomeScreen(viewModel: PsychologistHomeViewModel,
 
             // Patients Tracking
             PatientsTracking(
+                patients = patients,
                 onPatientClick = { patientId ->
-                    // TODO: Navegar a detalle de paciente
+                    onNavigateToPatientDetail(patientId)
                 },
                 onViewAllClick = {
-                    // TODO: Navegar a lista completa de pacientes
+                    onNavigateToPatientList()
                 }
             )
 

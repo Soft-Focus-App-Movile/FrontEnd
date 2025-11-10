@@ -6,6 +6,7 @@ import com.softfocus.features.home.presentation.psychologist.PsychologistHomeVie
 import com.softfocus.features.psychologist.data.remote.PsychologistService
 import com.softfocus.features.psychologist.data.repositories.PsychologistRepositoryImpl
 import com.softfocus.features.psychologist.domain.repositories.PsychologistRepository
+import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -60,6 +61,7 @@ object PsychologistPresentationModule {
     fun getPsychologistHomeViewModel(context: Context): PsychologistHomeViewModel {
         return PsychologistHomeViewModel(
             getPsychologistRepository(),
+            TherapyPresentationModule.getGetMyPatientsUseCase(),
             context
         )
     }
