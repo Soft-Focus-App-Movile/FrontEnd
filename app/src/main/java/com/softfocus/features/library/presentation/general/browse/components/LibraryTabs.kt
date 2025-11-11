@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -100,11 +101,10 @@ fun LibraryTabs(
         } else {
             // Para psicólogos y usuarios generales: Solo tabs de contenido
             val contentTabIndex = availableTabs.indexOf(selectedType).takeIf { it >= 0 } ?: 0
-            ScrollableTabRow(
+            TabRow(
                 selectedTabIndex = contentTabIndex,
                 containerColor = Color.Transparent,
                 contentColor = Green65,
-                edgePadding = 16.dp,
                 indicator = { tabPositions ->
                     if (tabPositions.isNotEmpty()) {
                         TabRowDefaults.SecondaryIndicator(
