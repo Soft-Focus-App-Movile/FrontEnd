@@ -63,6 +63,12 @@ fun provideTherapyRepository(context: Context): TherapyRepository {
     return TherapyRepositoryImpl(therapyService, context)
 }
 
+fun provideTrackingRepository(context: Context): com.softfocus.features.tracking.domain.repository.TrackingRepository {
+    val retrofit = getRetrofitInstance()
+    val trackingApi = retrofit.create(com.softfocus.features.tracking.data.remote.TrackingApi::class.java)
+    return com.softfocus.features.tracking.data.TrackingRepositoryImpl(trackingApi)
+}
+
 @Composable
 inline fun <reified T : ViewModel> libraryViewModel(
     crossinline creator: (LibraryRepository) -> T
@@ -82,7 +88,7 @@ inline fun <reified T : ViewModel> libraryViewModel(
 
 @Composable
 inline fun <reified T : ViewModel> libraryViewModelWithTherapy(
-    crossinline creator: (LibraryRepository, TherapyRepository) -> T
+    crossinline creator: (LibraryRepository, TherapyRepository, com.softfocus.features.tracking.domain.repository.TrackingRepository) -> T
 ): T {
     val context = LocalContext.current
     val factory = remember {
@@ -91,7 +97,8 @@ inline fun <reified T : ViewModel> libraryViewModelWithTherapy(
             override fun <VM : ViewModel> create(modelClass: Class<VM>): VM {
                 val libraryRepo = provideLibraryRepository(context)
                 val therapyRepo = provideTherapyRepository(context)
-                return creator(libraryRepo, therapyRepo) as VM
+                val trackingRepo = provideTrackingRepository(context)
+                return creator(libraryRepo, therapyRepo, trackingRepo) as VM
             }
         }
     }

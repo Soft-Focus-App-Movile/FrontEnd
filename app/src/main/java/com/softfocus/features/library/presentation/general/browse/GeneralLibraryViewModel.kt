@@ -3,12 +3,14 @@ package com.softfocus.features.library.presentation.general.browse
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.softfocus.core.common.result.Result
 import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.domain.models.EmotionalTag
 import com.softfocus.features.library.domain.models.MockLibraryData
 import com.softfocus.features.library.domain.repositories.LibraryRepository
 import com.softfocus.features.library.presentation.general.browse.components.VideoCategory
+import com.softfocus.features.tracking.domain.repository.TrackingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +18,8 @@ import kotlinx.coroutines.launch
 
 class GeneralLibraryViewModel(
     private val repository: LibraryRepository,
-    private val therapyRepository: com.softfocus.features.therapy.domain.repositories.TherapyRepository
+    private val therapyRepository: com.softfocus.features.therapy.domain.repositories.TherapyRepository,
+    private val trackingRepository: TrackingRepository
 ) : ViewModel() {
 
     companion object {
@@ -53,8 +56,64 @@ class GeneralLibraryViewModel(
     val patientsError: StateFlow<String?> = _patientsError.asStateFlow()
 
     init {
-        loadAllContent()
+        loadTrackingAndRecommendations()
         loadFavorites()
+    }
+
+    private fun loadTrackingAndRecommendations() {
+        viewModelScope.launch {
+            try {
+                when (val result = trackingRepository.getTodayCheckIn()) {
+                    is Result.Success -> {
+                        val todayCheckIn = result.data
+                        if (todayCheckIn.hasCompletedToday && todayCheckIn.checkIn != null) {
+                            val checkIn = todayCheckIn.checkIn
+                            val emotion = mapToEmotionalTag(
+                                checkIn.emotionalLevel,
+                                checkIn.energyLevel,
+                                checkIn.symptoms
+                            )
+                            if (emotion != null) {
+                                loadContentByEmotion(emotion)
+                            } else {
+                                loadAllContent()
+                            }
+                        } else {
+                            loadAllContent()
+                        }
+                    }
+                    is Result.Error -> {
+                        loadAllContent()
+                    }
+                }
+            } catch (e: Exception) {
+                loadAllContent()
+            }
+        }
+    }
+
+    private fun mapToEmotionalTag(
+        moodLevel: Int,
+        energyLevel: Int,
+        symptoms: List<String>
+    ): EmotionalTag? {
+        val symptomsText = symptoms.joinToString(" ").lowercase()
+
+        if (symptomsText.contains("energia") || symptomsText.contains("energético") || symptomsText.contains("energetico")) {
+            return EmotionalTag.Energetic
+        }
+        if (symptomsText.contains("tranquilo") || symptomsText.contains("calma") || symptomsText.contains("relajad")) {
+            return EmotionalTag.Calm
+        }
+        if (symptomsText.contains("feliz") || symptomsText.contains("alegr") || symptomsText.contains("content")) {
+            return EmotionalTag.Happy
+        }
+
+        return when {
+            energyLevel >= 8 -> EmotionalTag.Energetic
+            moodLevel >= 7 && energyLevel in 5..7 -> EmotionalTag.Happy
+            else -> EmotionalTag.Calm
+        }
     }
 
     private fun loadAllContent() {
@@ -260,6 +319,12 @@ class GeneralLibraryViewModel(
         val currentState = _uiState.value
         if (currentState is GeneralLibraryUiState.Success) {
             _uiState.value = currentState.copy(selectedType = type)
+        } else {
+            if (_selectedEmotion.value != null) {
+                loadContentByEmotion(_selectedEmotion.value!!)
+            } else {
+                loadAllContent()
+            }
         }
     }
 
@@ -297,7 +362,15 @@ class GeneralLibraryViewModel(
     }
 
     suspend fun getMyRelationship(): Result<com.softfocus.features.therapy.domain.models.TherapeuticRelationship?> {
-        return therapyRepository.getMyRelationship()
+        return try {
+            val result = therapyRepository.getMyRelationship()
+            result.fold(
+                onSuccess = { data -> Result.Success(data) },
+                onFailure = { error -> Result.Error(error.message ?: "Error al obtener relación terapéutica") }
+            )
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Error desconocido")
+        }
     }
 
     fun loadWeather(latitude: Double, longitude: Double) {

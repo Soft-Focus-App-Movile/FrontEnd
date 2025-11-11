@@ -1,25 +1,33 @@
 package com.softfocus.features.library.presentation.general.browse
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
@@ -43,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.softfocus.core.common.result.Result
 import com.softfocus.core.data.local.UserSession
 import com.softfocus.features.auth.domain.models.UserType
 import com.softfocus.features.library.assignments.presentation.AssignedContentScreen
@@ -80,8 +89,8 @@ import com.softfocus.ui.theme.*
 @Composable
 fun GeneralLibraryScreen(
     modifier: Modifier = Modifier,
-    viewModel: GeneralLibraryViewModel = libraryViewModelWithTherapy { libRepo, therapyRepo ->
-        GeneralLibraryViewModel(libRepo, therapyRepo)
+    viewModel: GeneralLibraryViewModel = libraryViewModelWithTherapy { libRepo, therapyRepo, trackingRepo ->
+        GeneralLibraryViewModel(libRepo, therapyRepo, trackingRepo)
     },
     onContentClick: (ContentItem) -> Unit = {},
 ) {
@@ -109,11 +118,13 @@ fun GeneralLibraryScreen(
 
     LaunchedEffect(Unit) {
         if (!isPsychologist) {
-            val relationshipResult = viewModel.getMyRelationship()
-            relationshipResult.onSuccess { relationship ->
-                hasTherapist.value = relationship != null && relationship.isActive
-            }.onFailure {
-                hasTherapist.value = false
+            when (val relationshipResult = viewModel.getMyRelationship()) {
+                is Result.Success -> {
+                    hasTherapist.value = relationshipResult.data != null && relationshipResult.data.isActive
+                }
+                is Result.Error -> {
+                    hasTherapist.value = false
+                }
             }
         }
     }
@@ -143,7 +154,7 @@ fun GeneralLibraryScreen(
 
     LaunchedEffect(isPatient, assignmentsViewModel) {
         if (isPatient && assignmentsViewModel != null) {
-            assignmentsViewModel.loadAssignedContent(completed = null)
+            assignmentsViewModel.loadAssignedContent(completed = false)
         }
     }
 

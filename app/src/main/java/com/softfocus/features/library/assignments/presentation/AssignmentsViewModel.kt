@@ -1,5 +1,6 @@
 package com.softfocus.features.library.assignments.presentation
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.softfocus.features.library.assignments.domain.repositories.AssignmentsRepository
@@ -16,7 +17,7 @@ class AssignmentsViewModel(
     val uiState: StateFlow<AssignmentsUiState> = _uiState.asStateFlow()
 
     init {
-        loadAssignedContent()
+        loadAssignedContent(completed = false)
     }
 
     fun loadAssignedContent(completed: Boolean? = null) {
@@ -47,12 +48,21 @@ class AssignmentsViewModel(
         viewModelScope.launch {
             repository.completeAssignment(assignmentId).fold(
                 onSuccess = {
-                    loadAssignedContent()
+                    val currentState = _uiState.value
+                    if (currentState is AssignmentsUiState.Success) {
+                        val updatedAssignments = currentState.assignments.filter { it.id != assignmentId }
+                        val pending = updatedAssignments.count { !it.isCompleted }
+                        val completedCount = updatedAssignments.count { it.isCompleted }
+
+                        _uiState.value = AssignmentsUiState.Success(
+                            assignments = updatedAssignments,
+                            pendingCount = pending,
+                            completedCount = completedCount
+                        )
+                    }
                 },
                 onFailure = { exception ->
-                    _uiState.value = AssignmentsUiState.Error(
-                        message = exception.message ?: "Error al completar asignación"
-                    )
+                    Log.e("AssignmentsViewModel", "Error al completar asignación: ${exception.message}", exception)
                 }
             )
         }
