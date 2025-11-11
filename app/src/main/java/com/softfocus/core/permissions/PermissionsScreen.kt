@@ -41,7 +41,7 @@ fun PermissionsScreen(
     onPermissionsGranted: () -> Unit
 ) {
     val context = LocalContext.current
-    var currentStep by remember { mutableStateOf(0) } // 0 = location, 1 = camera, 2 = done
+    var currentStep by remember { mutableStateOf(0) } // 0 = location, 1 = camera, 2 = gallery, 3 = done
 
     // Launcher para permisos de ubicación
     val locationPermissionsLauncher = rememberLauncherForActivityResult(
@@ -55,7 +55,15 @@ fun PermissionsScreen(
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        // Después de solicitar cámara, terminar
+        // Después de solicitar cámara, pasar a galería
+        currentStep = 2
+    }
+
+    // Launcher para permiso de galería
+    val galleryPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        // Después de solicitar galería, terminar
         savePermissionsRequested(context)
         onPermissionsGranted()
     }
@@ -104,6 +112,13 @@ fun PermissionsScreen(
         PermissionItem(
             title = "Cámara",
             description = "Para detectar emociones mediante reconocimiento facial y ayudarte con tu bienestar emocional"
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        PermissionItem(
+            title = "Fotos y medios",
+            description = "Para seleccionar fotos de tu galería y analizar emociones"
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -156,10 +171,19 @@ fun PermissionsScreen(
         }
     }
 
-    // Cuando currentStep cambia a 1, solicitar permiso de cámara
+    // Cuando currentStep cambia, solicitar permisos secuencialmente
     LaunchedEffect(currentStep) {
-        if (currentStep == 1) {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        when (currentStep) {
+            1 -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            2 -> {
+                // Para Android 13+ (API 33) usar READ_MEDIA_IMAGES, para versiones anteriores READ_EXTERNAL_STORAGE
+                val permission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    Manifest.permission.READ_MEDIA_IMAGES
+                } else {
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                }
+                galleryPermissionLauncher.launch(permission)
+            }
         }
     }
 }

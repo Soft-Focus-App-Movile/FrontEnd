@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -70,7 +71,8 @@ import com.softfocus.ui.theme.YellowE8
 fun AIChatScreen(
     initialMessage: String? = null,
     sessionId: String? = null,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToEmotionDetection: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel = remember { AIPresentationModule.getAIChatViewModel(context) }
@@ -239,19 +241,30 @@ fun AIChatScreen(
                         }
                     },
                     trailingIcon = {
-                        IconButton(
-                            onClick = {
-                                if (state.currentMessage.isNotBlank()) {
-                                    viewModel.sendMessage()
-                                }
-                            },
-                            enabled = state.currentMessage.isNotBlank() && !state.isLoading
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Enviar",
-                                tint = if (state.currentMessage.isNotBlank()) White else Color.Gray
-                            )
+                        Row {
+                            IconButton(
+                                onClick = onNavigateToEmotionDetection
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CameraAlt,
+                                    contentDescription = "Detectar emoción",
+                                    tint = White
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    if (state.currentMessage.isNotBlank()) {
+                                        viewModel.sendMessage()
+                                    }
+                                },
+                                enabled = state.currentMessage.isNotBlank() && !state.isLoading
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Enviar",
+                                    tint = if (state.currentMessage.isNotBlank()) White else Color.Gray
+                                )
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -278,6 +291,7 @@ fun AIChatScreenPreview() {
     AIChatScreen(
         initialMessage = "Hola, necesito ayuda",
         sessionId = null,
-        onBackClick = {}
+        onBackClick = {},
+        onNavigateToEmotionDetection = {}
     )
 }

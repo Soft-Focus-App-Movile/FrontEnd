@@ -17,6 +17,10 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 
+    <!-- Gallery/Storage permissions for image selection -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
     <!-- Package visibility queries para Android 11+ (API 30+) -->
     <!-- Permite verificar e iniciar YouTube y Spotify -->
     <queries>

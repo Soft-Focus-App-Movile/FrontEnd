@@ -270,7 +270,8 @@ fun NavGraphBuilder.sharedNavigation(
                         onClose = { navController.popBackStack() },
                         onSessionClick = { sessionId ->
                             navController.navigate(Route.AIChat.createRoute(sessionId = sessionId))
-                        }
+                        },
+                        onNavigateToEmotionDetection = { navController.navigate(Route.EmotionDetection.path) }
                     )
                 }
             }
@@ -283,7 +284,8 @@ fun NavGraphBuilder.sharedNavigation(
                 onClose = { navController.popBackStack() },
                 onSessionClick = { sessionId ->
                     navController.navigate(Route.AIChat.createRoute(sessionId = sessionId))
-                }
+                },
+                onNavigateToEmotionDetection = { navController.navigate(Route.EmotionDetection.path) }
             )
         }
     }
@@ -323,7 +325,8 @@ fun NavGraphBuilder.sharedNavigation(
                     AIChatScreen(
                         initialMessage = decodedMessage,
                         sessionId = if (sessionId != "null") sessionId else null,
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack() },
+                        onNavigateToEmotionDetection = { navController.navigate(Route.EmotionDetection.path) }
                     )
                 }
             }
@@ -332,7 +335,8 @@ fun NavGraphBuilder.sharedNavigation(
             AIChatScreen(
                 initialMessage = decodedMessage,
                 sessionId = if (sessionId != "null") sessionId else null,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNavigateToEmotionDetection = { navController.navigate(Route.EmotionDetection.path) }
             )
         }
     }
@@ -568,6 +572,13 @@ fun NavGraphBuilder.sharedNavigation(
                 }
             }
         }
+    }
+
+    // Emotion Detection Screen
+    composable(Route.EmotionDetection.path) {
+        com.softfocus.features.ai.presentation.emotion.EmotionDetectionScreen(
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import com.softfocus.features.ai.presentation.di.AIPresentationModule
 import java.io.File
 import java.text.SimpleDateFormat
@@ -39,7 +40,9 @@ fun EmotionDetectionScreen(
     val state by viewModel.state.collectAsState()
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var photoFile by remember { mutableStateOf<File?>(null) }
     var hasCameraPermission by remember { mutableStateOf(false) }
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -50,11 +53,25 @@ fun EmotionDetectionScreen(
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success && imageUri != null) {
-            val file = File(imageUri!!.path!!)
-            if (file.exists()) {
-                viewModel.analyzeEmotion(file)
+        if (success && photoFile != null && photoFile!!.exists()) {
+            // Actualizar imageUri para forzar re-renderización de la imagen
+            imageUri = tempCameraUri
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            imageUri = it
+            // Convertir URI a File temporal
+            val inputStream = context.contentResolver.openInputStream(it)
+            val tempFile = File.createTempFile("gallery_", ".jpg", context.cacheDir)
+            tempFile.outputStream().use { outputStream ->
+                inputStream?.copyTo(outputStream)
             }
+            photoFile = tempFile
+            // No analizar automáticamente, esperar a que el usuario elija
         }
     }
 
@@ -104,7 +121,7 @@ fun EmotionDetectionScreen(
                 }
             }
 
-            if (imageUri != null) {
+            if (imageUri != null && state.emotionAnalysis == null) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -112,40 +129,104 @@ fun EmotionDetectionScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Image(
-                        painter = rememberAsyncImagePainter(imageUri),
+                        painter = rememberAsyncImagePainter(model = imageUri),
                         contentDescription = "Imagen capturada",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 }
+
+                Text(
+                    text = "¿Deseas crear un registro automático en tu calendario emocional?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            photoFile?.let { viewModel.analyzeEmotion(it, autoCheckIn = true) }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        enabled = !state.isLoading && photoFile != null
+                    ) {
+                        Text("Sí, crear registro")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            photoFile?.let { viewModel.analyzeEmotion(it, autoCheckIn = false) }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        enabled = !state.isLoading && photoFile != null
+                    ) {
+                        Text("Solo analizar")
+                    }
+                }
             }
 
-            Button(
-                onClick = {
-                    if (hasCameraPermission) {
-                        val photoFile = createImageFile(context)
-                        imageUri = FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            photoFile
+            if (imageUri == null || state.emotionAnalysis != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            if (hasCameraPermission) {
+                                val file = createImageFile(context)
+                                photoFile = file
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    file
+                                )
+                                tempCameraUri = uri
+                                imageUri = null // Limpiar la imagen anterior
+                                cameraLauncher.launch(uri)
+                            } else {
+                                permissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        enabled = !state.isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
                         )
-                        cameraLauncher.launch(imageUri)
-                    } else {
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cámara")
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                enabled = !state.isLoading
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CameraAlt,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Tomar Foto")
+
+                    OutlinedButton(
+                        onClick = {
+                            galleryLauncher.launch("image/*")
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        enabled = !state.isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Galería")
+                    }
+                }
             }
 
             if (state.isLoading) {

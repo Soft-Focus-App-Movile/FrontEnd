@@ -86,6 +86,7 @@ Route(val path: String) {
             }
         }
     }
+    data object EmotionDetection : Route("emotion_detection")
 
     data object ConnectPsychologist : Route("connect_psychologist")
 
