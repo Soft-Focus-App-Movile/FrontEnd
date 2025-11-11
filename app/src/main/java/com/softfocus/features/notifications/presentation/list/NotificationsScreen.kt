@@ -1,5 +1,6 @@
 package com.softfocus.features.notifications.presentation.list
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import com.softfocus.features.notifications.domain.models.*
 import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.SourceSansRegular
+import kotlinx.coroutines.delay
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
@@ -30,11 +32,18 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun NotificationsScreen(
     onNavigateBack: () -> Unit,
-    //onNavigateToSettings: () -> Unit,
     viewModel: NotificationsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
+
+    // Auto-refresh cada 5 segundos
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5_000L)
+            viewModel.refreshNotifications()
+        }
+    }
 
     Scaffold(
         containerColor = Color.White,
@@ -58,23 +67,25 @@ fun NotificationsScreen(
                     }
                 },
                 actions = {
-                    // Botón de Refresh - NUEVO
+                    if (state.isRefreshing) {
+                        CircularProgressIndicator(
+                            color = Green49,
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+
                     IconButton(
                         onClick = { viewModel.refreshNotifications() },
                         enabled = !state.isRefreshing && !state.isLoading
                     ) {
-                        if (state.isRefreshing) {
-                            CircularProgressIndicator(
-                                color = Green49,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        } else {
-                            Icon(
-                                Icons.Default.Refresh,
-                                "Actualizar",
-                                tint = Green49
-                            )
-                        }
+                        Icon(
+                            Icons.Default.Refresh,
+                            "Actualizar",
+                            tint = if (state.isRefreshing) Green49.copy(alpha = 0.4f) else Green49
+                        )
                     }
 
                     if (state.notifications.any { it.status != DeliveryStatus.READ }) {
@@ -99,32 +110,25 @@ fun NotificationsScreen(
                 .padding(padding)
                 .background(Color.White)
         ) {
-            // Indicador de refresh - NUEVO
             if (state.isRefreshing) {
-                Box(
+                LinearProgressIndicator(
+                    color = Green49,
+                    trackColor = Green49.copy(alpha = 0.1f),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LinearProgressIndicator(
-                        color = Green49,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                        .height(2.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.height(2.dp))
             }
 
-            // Tabs más centrados y con ancho limitado
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(32.dp)
-                ) {
-                    // Tab "Todas"
+                Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.clickable {
@@ -150,7 +154,6 @@ fun NotificationsScreen(
                         }
                     }
 
-                    // Tab "No leídas"
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.clickable {
@@ -158,13 +161,35 @@ fun NotificationsScreen(
                             viewModel.filterNotifications(DeliveryStatus.DELIVERED)
                         }
                     ) {
-                        Text(
-                            "No leídas",
-                            style = SourceSansRegular,
-                            fontSize = 16.sp,
-                            color = if (selectedTab == 1) Green49 else Color.Gray,
-                            fontWeight = if (selectedTab == 1) FontWeight.SemiBold else FontWeight.Normal
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "No leídas",
+                                style = SourceSansRegular,
+                                fontSize = 16.sp,
+                                color = if (selectedTab == 1) Green49 else Color.Gray,
+                                fontWeight = if (selectedTab == 1) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                            val unreadCount = state.notifications.count { it.status != DeliveryStatus.READ }
+                            if (unreadCount > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFE53935)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
                         if (selectedTab == 1) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Box(
@@ -180,7 +205,6 @@ fun NotificationsScreen(
 
             HorizontalDivider(color = Color(0xFFE0E0E0))
 
-            // Content
             when {
                 state.isLoading && state.notifications.isEmpty() -> {
                     Box(
@@ -242,24 +266,30 @@ private fun NotificationItem(
     onDelete: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable {
+                isExpanded = !isExpanded
+                if (!isExpanded) {
+                    onClick()
+                }
+            },
         color = if (notification.readAt != null) {
             Color.White
         } else {
-            Color(0xFFF5F9F5) // Verde muy tenue para no leídas
+            Color(0xFFF5F9F5)
         }
     ) {
         Row(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .animateContentSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Icon
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -275,28 +305,58 @@ private fun NotificationItem(
                 )
             }
 
-            // Content
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = notification.title,
-                        style = SourceSansRegular,
-                        fontSize = 16.sp,
-                        fontWeight = if (notification.status != DeliveryStatus.READ) {
-                            FontWeight.Bold
-                        } else {
-                            FontWeight.Normal
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                    Row(
                         modifier = Modifier.weight(1f),
-                        color = Color(0xFF2C2C2C)
-                    )
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = notification.title,
+                            style = SourceSansRegular,
+                            fontSize = 16.sp,
+                            fontWeight = if (notification.status != DeliveryStatus.READ) {
+                                FontWeight.Bold
+                            } else {
+                                FontWeight.Normal
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = Color(0xFF2C2C2C),
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+
+                        if (notification.priority == Priority.HIGH || notification.priority == Priority.CRITICAL) {
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        color = Color(0xFFE53935).copy(alpha = 0.15f),
+                                        shape = MaterialTheme.shapes.extraSmall
+                                    )
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = if (notification.priority == Priority.CRITICAL) "!" else "Alta",
+                                    style = SourceSansRegular,
+                                    fontSize = 9.sp,
+                                    color = Color(0xFFE53935),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Text(
                         text = formatTimeAgo(notification.createdAt),
                         style = SourceSansRegular,
@@ -305,30 +365,56 @@ private fun NotificationItem(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                Text(
-                    text = notification.content,
-                    style = SourceSansRegular,
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                if (notification.priority == Priority.HIGH || notification.priority == Priority.CRITICAL) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(
-                        text = "Prioridad ${notification.priority.name.lowercase()}",
+                        text = notification.content,
+                        style = SourceSansRegular,
+                        fontSize = 14.sp,
+                        color = Color(0xFF5C5C5C),
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                        overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis,
+                        lineHeight = 20.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize()
+                    )
+
+                    if (!isExpanded && notification.content.length > 120) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Ver más",
+                            style = SourceSansRegular,
+                            fontSize = 12.sp,
+                            color = Green49,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                if (isExpanded) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(
+                        color = Color(0xFFE0E0E0),
+                        thickness = 0.5.dp,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                    Text(
+                        text = "Recibida el ${notification.createdAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm"))}",
                         style = SourceSansRegular,
                         fontSize = 12.sp,
-                        color = Color(0xFFE53935)
+                        color = Color.Gray.copy(alpha = 0.7f)
                     )
                 }
             }
 
-            // Delete button
-            IconButton(onClick = { showDeleteDialog = true }) {
+            IconButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.size(24.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Eliminar",
@@ -405,6 +491,12 @@ private fun EmptyNotificationsView() {
                 fontSize = 16.sp,
                 color = Color.Gray
             )
+            Text(
+                text = "Cuando recibas notificaciones aparecerán aquí",
+                style = SourceSansRegular,
+                fontSize = 14.sp,
+                color = Color.Gray.copy(alpha = 0.7f)
+            )
         }
     }
 }
@@ -420,6 +512,12 @@ private fun ErrorView(error: String, onRetry: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(32.dp)
         ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                modifier = Modifier.size(60.dp),
+                tint = Color(0xFFE53935).copy(alpha = 0.5f)
+            )
             Text(
                 text = error,
                 style = SourceSansRegular,

@@ -267,7 +267,7 @@ class NotificationPreferencesViewModel @Inject constructor(
                 )
             }
 
-            // 2. Sugerencias diarias (INFO)
+            // 2. Sugerencias diarias
             val infoPref = filteredPrefs.find { it.notificationType == NotificationType.INFO }
             if (infoPref != null) {
                 mutablePrefs.add(infoPref)
