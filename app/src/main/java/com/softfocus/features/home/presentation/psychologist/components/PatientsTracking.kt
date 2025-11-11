@@ -32,7 +32,7 @@ import com.softfocus.ui.theme.White
 @Composable
 fun PatientsTracking(
     patients: List<PatientDirectory> = emptyList(),
-    onPatientClick: (String) -> Unit = {},
+    onPatientClick: (PatientDirectory) -> Unit = {},
     onViewAllClick: () -> Unit = {}
 ) {
     Column(
@@ -64,7 +64,7 @@ fun PatientsTracking(
             patients.take(4).forEach { patient ->
                 PatientActivityCard(
                     patient = patient,
-                    onClick = { onPatientClick(patient.patientId) }
+                    onClick = { onPatientClick(patient) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }

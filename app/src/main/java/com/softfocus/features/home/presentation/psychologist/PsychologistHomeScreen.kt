@@ -20,6 +20,7 @@ import com.softfocus.core.data.local.UserSession
 import com.softfocus.core.utils.LocationHelper
 import com.softfocus.features.home.presentation.psychologist.components.PatientsTracking
 import com.softfocus.features.home.presentation.psychologist.components.StatsSection
+import com.softfocus.features.therapy.domain.models.PatientDirectory
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,7 +41,7 @@ fun PsychologistHomeScreen(
     viewModel: PsychologistHomeViewModel,
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToPatientList: () -> Unit = {},
-    onNavigateToPatientDetail: (String) -> Unit = {}
+    onNavigateToPatientDetail: (PatientDirectory) -> Unit = {}
 ) {
     val invitationCode = viewModel.invitationCode.collectAsState()
     val patients by viewModel.patients.collectAsState()
@@ -157,8 +158,8 @@ fun PsychologistHomeScreen(
             // Patients Tracking
             PatientsTracking(
                 patients = patients,
-                onPatientClick = { patientId ->
-                    onNavigateToPatientDetail(patientId)
+                onPatientClick = { patient ->
+                    onNavigateToPatientDetail(patient)
                 },
                 onViewAllClick = {
                     onNavigateToPatientList()
