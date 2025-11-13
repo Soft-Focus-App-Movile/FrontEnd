@@ -3,13 +3,14 @@ package com.softfocus.features.therapy.data.remote
 import com.softfocus.core.networking.ApiConstants
 import com.softfocus.features.therapy.data.models.request.ConnectWithPsychologistRequestDto
 import com.softfocus.features.therapy.data.models.request.SendChatMessageRequestDto
-import com.softfocus.features.therapy.data.models.response.ChatHistoryResponseDto
 import com.softfocus.features.therapy.data.models.response.ConnectResponseDto
 import com.softfocus.features.therapy.data.models.response.MyRelationshipResponseDto
 import com.softfocus.features.therapy.data.models.response.PatientDirectoryResponseDto
 import com.softfocus.features.therapy.data.models.response.PatientProfileResponseDto
 import com.softfocus.features.therapy.data.models.response.SendChatMessageResponseDto
+import com.softfocus.features.therapy.data.models.response.TherapyChatResponseDto
 import com.softfocus.features.tracking.data.model.CheckInsHistoryApiResponse
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -41,13 +42,18 @@ interface TherapyService {
         @Query("relationshipId") relationshipId: String,
         @Query("page") page: Int,
         @Query("size") size: Int
-    ): ChatHistoryResponseDto
+    ): Response<List<TherapyChatResponseDto>>
 
     @POST(ApiConstants.Chat.SEND)
     suspend fun sendChatMessage(
         @Header("Authorization") token: String,
         @Body request: SendChatMessageRequestDto
-    ): SendChatMessageResponseDto
+    ): Response<SendChatMessageResponseDto>
+
+    @GET(ApiConstants.Chat.LAST_MESSAGE)
+    suspend fun getLastReceivedMessage(
+        @Header("Authorization") token: String
+    ): Response<TherapyChatResponseDto>
 
     @GET(ApiConstants.Users.PSYCHOLOGIST_PATIENT)
     suspend fun getPatientDetails(

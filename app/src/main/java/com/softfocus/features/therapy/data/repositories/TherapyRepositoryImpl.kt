@@ -13,6 +13,7 @@ import com.softfocus.features.therapy.domain.models.TherapeuticRelationship
 import com.softfocus.features.therapy.domain.repositories.TherapyRepository
 import com.softfocus.features.tracking.data.mapper.toDomain
 import com.softfocus.features.tracking.domain.model.CheckIn
+import java.io.IOException
 import java.time.ZonedDateTime
 
 class TherapyRepositoryImpl(
@@ -70,58 +71,9 @@ class TherapyRepositoryImpl(
             Result.failure(e)
         }
     }
-    override suspend fun getChatHistory(relationshipId: String, page: Int, size: Int): Result<List<ChatMessage>> {
-        return try {
-            val response = therapyService.getChatHistory(
-                token = getAuthToken(),
-                relationshipId = relationshipId,
-                page = page,
-                size = size
-            )
-            // Asumimos que el DTO tiene un mapper .toDomain()
-            val messages = response.messages.map { it.toDomain(getUserId()) }
-            Result.success(messages)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 
     private fun getUserId(): String {
         return userSession.getUser()?.id ?: throw IllegalStateException("ID de usuario no disponible.")
-    }
-
-    override suspend fun sendChatMessage(relationshipId: String, receiverId: String, content: String): Result<ChatMessage> {
-        return try {
-            val request = SendChatMessageRequestDto(
-                relationshipId = relationshipId,
-                receiverId = receiverId,
-                content = content,
-                messageType = "text"
-            )
-            val response = therapyService.sendChatMessage(
-                token = getAuthToken(),
-                request = request
-            )
-
-            // Creamos un ChatMessage local temporalmente, ya que el backend
-            // solo devuelve el ID. El mensaje real llegará por SignalR.
-            // O, si el backend devuelve el mensaje completo, lo mapeamos.
-            // Por ahora, creamos uno local:
-            val sentMessage = ChatMessage(
-                id = response.messageId,
-                relationshipId = relationshipId,
-                senderId = getUserId(),
-                receiverId = receiverId,
-                content = content,
-                timestamp = ZonedDateTime.now().toString(),
-                isFromMe = true,
-                messageType = " "
-            )
-            Result.success(sentMessage)
-
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
     }
 
     override suspend fun getPatientProfile(patientId: String): Result<PatientProfile> {
@@ -169,6 +121,118 @@ class TherapyRepositoryImpl(
                 relationshipId = relationshipId
             )
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Implementación de Send Chat Message
+     * Devuelve el ID del mensaje como confirmación.
+     */
+    override suspend fun sendChatMessage(
+        relationshipId: String,
+        receiverId: String,
+        content: String,
+        messageType: String
+    ): Result<String> {
+        return try {
+            val request = SendChatMessageRequestDto(
+                relationshipId = relationshipId,
+                receiverId = receiverId,
+                content = content,
+                messageType = messageType
+            )
+            val response = therapyService.sendChatMessage(
+                token = getAuthToken(),
+                request = request
+            )
+
+            if (response.isSuccessful && response.body() != null) {
+                // Devuelve solo el ID del mensaje, como solicitaste
+                Result.success(response.body()!!.messageId)
+            } else {
+                Result.failure(IOException("Error al enviar mensaje: ${response.code()} ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Implementación de Get Chat History
+     * Mapea los DTOs (incluyendo el "content.value") a Modelos de Dominio.
+     */
+    override suspend fun getChatHistory(
+        relationshipId: String,
+        page: Int,
+        size: Int
+    ): Result<List<ChatMessage>> {
+        return try {
+            val response = therapyService.getChatHistory(
+                token = getAuthToken(),
+                relationshipId = relationshipId,
+                page = page,
+                size = size
+            )
+
+            if (response.isSuccessful) {
+                val dtos = response.body() ?: emptyList()
+                val userId = getUserId()
+
+                // Mapear DTOs a Modelos de Dominio
+                val messages = dtos.map { dto ->
+                    ChatMessage(
+                        id = dto.id,
+                        relationshipId = dto.relationshipId,
+                        senderId = dto.senderId,
+                        receiverId = dto.receiverId,
+                        content = dto.content.value, // <-- Mapeo clave del DTO anidado
+                        timestamp = dto.timestamp,
+                        isFromMe = dto.senderId == userId, // Lógica para la UI
+                        messageType = dto.messageType
+                    )
+                }
+                Result.success(messages)
+            } else {
+                Result.failure(IOException("Error al obtener historial: ${response.code()} ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Implementación de Get Last Received Message
+     * Obtiene el último mensaje o null si no existe (404).
+     */
+    override suspend fun getLastReceivedMessage(): Result<ChatMessage?> {
+        return try {
+            val response = therapyService.getLastReceivedMessage(getAuthToken())
+
+            // 404 Not Found es un caso de éxito, significa que no hay mensajes.
+            if (response.code() == 404) {
+                return Result.success(null)
+            }
+
+            if (response.isSuccessful && response.body() != null) {
+                val dto = response.body()!!
+                val userId = getUserId()
+
+                val message = ChatMessage(
+                    id = dto.id,
+                    relationshipId = dto.relationshipId,
+                    senderId = dto.senderId,
+                    receiverId = dto.receiverId,
+                    content = dto.content.value, // <-- Mapeo clave
+                    timestamp = dto.timestamp,
+                    isFromMe = dto.senderId == userId,
+                    messageType = dto.messageType
+                )
+                Result.success(message)
+            } else {
+                Result.failure(IOException("Error al obtener el último mensaje: ${response.code()} ${response.message()}"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

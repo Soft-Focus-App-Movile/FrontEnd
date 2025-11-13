@@ -14,18 +14,20 @@ interface TherapyRepository {
 
     suspend fun getMyPatients(): Result<List<PatientDirectory>>
 
+    suspend fun sendChatMessage(
+        relationshipId: String,
+        receiverId: String,
+        content: String,
+        messageType: String
+    ): Result<String> // Devuelve el ID del mensaje
+
     suspend fun getChatHistory(
         relationshipId: String,
         page: Int,
         size: Int
     ): Result<List<ChatMessage>>
 
-    suspend fun sendChatMessage(
-        relationshipId: String,
-        receiverId: String,
-        content: String
-    ): Result<ChatMessage>
-
+    suspend fun getLastReceivedMessage(): Result<ChatMessage?> // Puede ser nulo si no hay mensajes
     suspend fun getPatientProfile(patientId: String): Result<PatientProfile>
 
     suspend fun getPatientCheckIns(

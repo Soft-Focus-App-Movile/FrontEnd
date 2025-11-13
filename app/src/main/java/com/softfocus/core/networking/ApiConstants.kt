@@ -65,6 +65,8 @@ object ApiConstants {
     object Chat {
         const val HISTORY = "chat/history"
         const val SEND = "chat/send"
+
+        const val LAST_MESSAGE = "chat/last-received"
     }
 
     // AI endpoints

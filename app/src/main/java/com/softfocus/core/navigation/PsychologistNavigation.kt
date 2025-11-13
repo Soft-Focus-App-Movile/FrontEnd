@@ -238,15 +238,17 @@ fun NavGraphBuilder.psychologistNavigation(
         // Llamamos a la pantalla
         Scaffold(
             bottomBar = { PsychologistBottomNav(navController) }
-        ) {
-            PatientDetailScreen(
-                navController = navController,
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                patientId = patientId,
-                relationshipId = relationshipId,
-                patientName = patientName
-            )
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                PatientDetailScreen(
+                    navController = navController,
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    patientId = patientId,
+                    relationshipId = relationshipId,
+                    patientName = patientName
+                )
+            }
         }
     }
 

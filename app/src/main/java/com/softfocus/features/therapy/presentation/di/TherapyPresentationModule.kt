@@ -17,9 +17,12 @@ import com.softfocus.features.library.assignments.domain.repositories.Assignment
 import com.softfocus.features.library.data.remote.AssignmentsService
 import com.softfocus.features.library.data.repositories.LibraryRepositoryImpl
 import com.softfocus.features.library.domain.repositories.LibraryRepository
+import com.softfocus.features.therapy.domain.usecases.GetChatHistoryUseCase
+import com.softfocus.features.therapy.domain.usecases.GetLastReceivedMessageUseCase
 import com.softfocus.features.therapy.domain.usecases.GetMyPatientsUseCase
 import com.softfocus.features.therapy.domain.usecases.GetPatientCheckInsUseCase
 import com.softfocus.features.therapy.domain.usecases.GetPatientProfileUseCase
+import com.softfocus.features.therapy.domain.usecases.SendChatMessageUseCase
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.PatientDetailViewModel
 import com.softfocus.features.therapy.presentation.psychologist.patientlist.PatientListViewModel
 import okhttp3.OkHttpClient
@@ -94,6 +97,18 @@ object TherapyPresentationModule {
 
     fun getGetPatientCheckInsUseCase(): GetPatientCheckInsUseCase {
         return GetPatientCheckInsUseCase(getTherapyRepository())
+    }
+
+    fun getSendChatMessageUseCase(): SendChatMessageUseCase {
+        return SendChatMessageUseCase(getTherapyRepository())
+    }
+
+    fun getGetChatHistoryUseCase(): GetChatHistoryUseCase {
+        return GetChatHistoryUseCase(getTherapyRepository())
+    }
+
+    fun getGetLastReceivedMessageUseCase(): GetLastReceivedMessageUseCase {
+        return GetLastReceivedMessageUseCase(getTherapyRepository())
     }
 
     fun getConnectWithPsychologistUseCase(): ConnectWithPsychologistUseCase {
