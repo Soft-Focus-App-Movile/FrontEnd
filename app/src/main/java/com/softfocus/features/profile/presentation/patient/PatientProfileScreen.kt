@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,10 +63,96 @@ fun PatientProfileScreen(
     onLogout: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val user by viewModel.user.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val assignedPsychologist by viewModel.assignedPsychologist.collectAsState()
     val psychologistLoadState by viewModel.psychologistLoadState.collectAsState()
+    var showDisconnectDialog by remember { mutableStateOf(false) }
+
+    // Mostrar mensaje de error si ocurre
+    LaunchedEffect(uiState) {
+        if (uiState is com.softfocus.features.profile.presentation.ProfileUiState.Error) {
+            val message = (uiState as com.softfocus.features.profile.presentation.ProfileUiState.Error).message
+            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Diálogo de confirmación de desvinculación
+    if (showDisconnectDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisconnectDialog = false },
+            title = {
+                Text(
+                    text = "Desvincular Terapeuta",
+                    style = CrimsonSemiBold,
+                    fontSize = 20.sp,
+                    color = Black
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "¿Estás seguro de que deseas desvincularte de tu terapeuta?",
+                        style = SourceSansRegular,
+                        fontSize = 16.sp,
+                        color = Black
+                    )
+                    Text(
+                        text = "Esta acción no se puede deshacer.",
+                        style = SourceSansRegular,
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDisconnectDialog = false
+                        viewModel.disconnectPsychologist(
+                            onSuccess = {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Terapeuta desvinculado exitosamente",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                                // Navegar a la vista de conexión (General Home)
+                                onNavigateToConnect()
+                            }
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RedE8
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Confirmar",
+                        color = White,
+                        style = SourceSansBold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDisconnectDialog = false },
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Cancelar",
+                        color = Black,
+                        style = SourceSansBold
+                    )
+                }
+            },
+            shape = RoundedCornerShape(12.dp),
+            containerColor = White
+        )
+    }
 
     if (uiState is com.softfocus.features.profile.presentation.ProfileUiState.Loading) {
         Box(
@@ -164,7 +251,7 @@ fun PatientProfileScreen(
                         CurrentTherapistCard(
                             therapistName = psychologist.fullName,
                             therapistImageUrl = psychologist.profileImageUrl,
-                            onUnlinkClick = onNavigateToConnect
+                            onUnlinkClick = { showDisconnectDialog = true }
                         )
                     }
                 }

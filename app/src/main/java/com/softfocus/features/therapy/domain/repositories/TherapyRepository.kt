@@ -36,4 +36,6 @@ interface TherapyRepository {
         pageSize: Int
     ): Result<List<CheckIn>>
 
+    suspend fun disconnectRelationship(relationshipId: String): Result<Unit>
+
 }

@@ -161,4 +161,16 @@ class TherapyRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun disconnectRelationship(relationshipId: String): Result<Unit> {
+        return try {
+            therapyService.disconnectRelationship(
+                token = getAuthToken(),
+                relationshipId = relationshipId
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

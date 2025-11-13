@@ -11,6 +11,7 @@ import com.softfocus.features.therapy.data.models.response.PatientProfileRespons
 import com.softfocus.features.therapy.data.models.response.SendChatMessageResponseDto
 import com.softfocus.features.tracking.data.model.CheckInsHistoryApiResponse
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -63,5 +64,11 @@ interface TherapyService {
         @Query("page") page: Int,
         @Query("pageSize") pageSize: Int
     ): CheckInsHistoryApiResponse
+
+    @DELETE(ApiConstants.Therapy.DISCONNECT)
+    suspend fun disconnectRelationship(
+        @Header("Authorization") token: String,
+        @Path("relationshipId") relationshipId: String
+    )
 
 }

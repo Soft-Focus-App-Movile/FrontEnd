@@ -47,7 +47,10 @@ fun NavGraphBuilder.patientNavigation(
             ) {
                 PatientProfileScreen(
                     onNavigateToConnect = {
-                        navController.navigate(Route.ConnectPsychologist.path)
+                        // Después de desvincularse, navegar al Home y limpiar la pila
+                        navController.navigate(Route.Home.path) {
+                            popUpTo(Route.Home.path) { inclusive = true }
+                        }
                     },
                     onNavigateBack = {
                         navController.popBackStack()
@@ -55,7 +58,7 @@ fun NavGraphBuilder.patientNavigation(
                     onNavigateToEditProfile = {
                         navController.navigate(Route.EditProfile.path)
                     },
-                    onNavigateToNotifications = { // ← AGREGAR ESTAS 3 LÍNEAS
+                    onNavigateToNotifications = {
                         navController.navigate(Route.NotificationPreferences.path)
                     },
                     onLogout = {
