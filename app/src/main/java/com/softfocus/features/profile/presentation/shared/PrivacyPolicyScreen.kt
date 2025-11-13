@@ -43,7 +43,7 @@ fun PrivacyPolicyScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Volver",
-                            tint = GreenA3
+                            tint = Green37
                         )
                     }
                 },
