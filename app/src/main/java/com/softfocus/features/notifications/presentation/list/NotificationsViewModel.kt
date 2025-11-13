@@ -1,19 +1,23 @@
 package com.softfocus.features.notifications.presentation.list
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.softfocus.core.data.local.UserSession
+import com.softfocus.features.auth.domain.models.UserType
 import com.softfocus.features.notifications.domain.models.DeliveryStatus
 import com.softfocus.features.notifications.domain.models.Notification
+import com.softfocus.features.notifications.domain.models.NotificationType
+import com.softfocus.features.notifications.domain.models.Priority
 import com.softfocus.features.notifications.domain.usecases.GetNotificationsUseCase
 import com.softfocus.features.notifications.domain.usecases.MarkAsReadUseCase
+import com.softfocus.features.notifications.domain.usecases.GetNotificationPreferencesUseCase
 import com.softfocus.features.notifications.domain.repositories.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 import javax.inject.Inject
 
 data class NotificationsState(
@@ -21,13 +25,15 @@ data class NotificationsState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null,
-    val unreadCount: Int = 0
+    val unreadCount: Int = 0,
+    val notificationsEnabled: Boolean = true
 )
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val getNotificationsUseCase: GetNotificationsUseCase,
     private val markAsReadUseCase: MarkAsReadUseCase,
+    private val getPreferencesUseCase: GetNotificationPreferencesUseCase,
     private val notificationRepository: NotificationRepository,
     private val userSession: UserSession
 ) : ViewModel() {
@@ -36,7 +42,8 @@ class NotificationsViewModel @Inject constructor(
     val state: StateFlow<NotificationsState> = _state.asStateFlow()
 
     private var currentFilter: DeliveryStatus? = null
-    private var allNotifications = listOf<Notification>() // ← NUEVO: Guardar todas las notificaciones
+    private var allNotifications = listOf<Notification>()
+    private var notificationsBeforeDisable = listOf<Notification>() // NUEVO: Guardar notificaciones antes de desactivar
 
     init {
         loadNotifications()
@@ -48,6 +55,8 @@ class NotificationsViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             val userId = userSession.getUser()?.id
+            val userType = userSession.getUser()?.userType
+
             if (userId == null) {
                 _state.value = _state.value.copy(
                     isLoading = false,
@@ -56,17 +65,43 @@ class NotificationsViewModel @Inject constructor(
                 return@launch
             }
 
-            // Siempre cargar TODAS las notificaciones sin filtro
+            // PASO 1: Cargar preferencias
+            val preferencesResult = getPreferencesUseCase(userId)
+            val masterPreference = preferencesResult.getOrNull()?.firstOrNull()
+            val notificationsEnabled = masterPreference?.isEnabled ?: true
+            val schedule = masterPreference?.schedule
+
+            println("🔔 [VIEWMODEL] Preferencias cargadas:")
+            println("   - Usuario: ${userType?.name}")
+            println("   - Notificaciones activadas: $notificationsEnabled")
+            println("   - Horario: ${schedule?.startTime} - ${schedule?.endTime}")
+
+            // PASO 2: Cargar notificaciones
             val result = getNotificationsUseCase(
                 userId = userId,
-                status = null // ← Cambia esto: siempre cargar sin filtro
+                status = null
             )
 
             result.fold(
                 onSuccess = { notifications ->
-                    allNotifications = notifications // ← Guardar todas
-                    applyFilter() // ← Aplicar filtro actual
-                    _state.value = _state.value.copy(isLoading = false)
+                    allNotifications = notifications
+
+                    // Si las notificaciones ESTÁN ACTIVADAS, guardar como "antes de desactivar"
+                    if (notificationsEnabled) {
+                        notificationsBeforeDisable = notifications
+                        println("💾 [VIEWMODEL] Guardadas ${notifications.size} notificaciones como backup")
+                    } else {
+                        println("⚠️ [VIEWMODEL] Notificaciones desactivadas - Usando backup de ${notificationsBeforeDisable.size} notificaciones")
+                        // Si están desactivadas, usar las que teníamos antes
+                        allNotifications = notificationsBeforeDisable
+                    }
+
+                    // PASO 3: Aplicar filtros según usuario y preferencias
+                    _state.value = _state.value.copy(
+                        notificationsEnabled = notificationsEnabled,
+                        isLoading = false
+                    )
+                    applyFilter(userType, notificationsEnabled, schedule)
                 },
                 onFailure = { error ->
                     _state.value = _state.value.copy(
@@ -78,20 +113,78 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    // NUEVA FUNCIÓN: Aplicar filtro a todas las notificaciones
-    private fun applyFilter() {
-        val filtered = when (currentFilter) {
-            DeliveryStatus.DELIVERED -> allNotifications.filter {
-                it.readAt == null // "No leídas" = cualquier notificación sin readAt
-            }
+    private fun applyFilter(
+        userType: UserType? = null,
+        notificationsEnabled: Boolean = _state.value.notificationsEnabled,
+        schedule: com.softfocus.features.notifications.domain.models.NotificationSchedule? = null
+    ) {
+        val currentUserType = userType ?: userSession.getUser()?.userType
+
+        // Si las notificaciones están DESACTIVADAS, no mostrar nada
+        if (!notificationsEnabled) {
+            println("🚫 [VIEWMODEL] Notificaciones desactivadas - Ocultando todas")
+            _state.value = _state.value.copy(notifications = emptyList())
+            return
+        }
+
+        // Filtrar por tab (Todas vs No leídas)
+        var filtered = when (currentFilter) {
+            DeliveryStatus.DELIVERED -> allNotifications.filter { it.readAt == null }
             else -> allNotifications
         }
+
+        // LÓGICA ESPECIAL PARA PSICÓLOGOS: Filtrar por horario
+        if (currentUserType == UserType.PSYCHOLOGIST && schedule != null) {
+            val now = LocalTime.now()
+            val startTime = schedule.startTime
+            val endTime = schedule.endTime
+
+            // Verificar si estamos dentro del horario
+            val isWithinSchedule = if (endTime.isAfter(startTime)) {
+                // Horario normal (ej: 9:00 - 17:00)
+                now.isAfter(startTime) && now.isBefore(endTime)
+            } else {
+                // Horario que cruza medianoche (ej: 22:00 - 06:00)
+                now.isAfter(startTime) || now.isBefore(endTime)
+            }
+
+            println("⏰ [VIEWMODEL] Verificación de horario:")
+            println("   - Hora actual: $now")
+            println("   - Horario: $startTime - $endTime")
+            println("   - Dentro del horario: $isWithinSchedule")
+
+            if (!isWithinSchedule) {
+                // FUERA DEL HORARIO: Solo mostrar alertas de crisis/emergencia
+                filtered = filtered.filter { notification ->
+                    notification.type == NotificationType.CRISIS_ALERT ||
+                            notification.type == NotificationType.EMERGENCY ||
+                            notification.priority == Priority.CRITICAL ||
+                            notification.priority == Priority.HIGH
+                }
+                println("🚨 [VIEWMODEL] Fuera de horario - Mostrando solo ${filtered.size} alertas críticas")
+            } else {
+                println("✅ [VIEWMODEL] Dentro de horario - Mostrando todas las ${filtered.size} notificaciones")
+            }
+        }
+
+        println("📊 [VIEWMODEL] Total notificaciones mostradas: ${filtered.size}")
         _state.value = _state.value.copy(notifications = filtered)
     }
 
     fun filterNotifications(status: DeliveryStatus?) {
         currentFilter = status
-        applyFilter() // ← Cambia esto: en lugar de recargar, solo aplicar filtro
+
+        // Re-cargar preferencias y aplicar filtro
+        viewModelScope.launch {
+            val userId = userSession.getUser()?.id ?: return@launch
+            val userType = userSession.getUser()?.userType
+
+            val preferencesResult = getPreferencesUseCase(userId)
+            val masterPreference = preferencesResult.getOrNull()?.firstOrNull()
+            val schedule = masterPreference?.schedule
+
+            applyFilter(userType, _state.value.notificationsEnabled, schedule)
+        }
     }
 
     fun markAsRead(notificationId: String) {
@@ -100,20 +193,28 @@ class NotificationsViewModel @Inject constructor(
 
             markAsReadUseCase(notificationId).fold(
                 onSuccess = {
-                    println("✅ [VIEWMODEL] Marcado como leída exitosamente en backend")
+                    println("✅ [VIEWMODEL] Marcado como leída exitosamente")
 
-                    // Actualizar localmente
                     allNotifications = allNotifications.map { notification ->
                         if (notification.id == notificationId) {
                             notification.copy(
                                 status = DeliveryStatus.READ,
-                                readAt = java.time.LocalDateTime.now() // ← Agregar esta línea
+                                readAt = java.time.LocalDateTime.now()
                             )
                         } else {
                             notification
                         }
                     }
-                    applyFilter()
+
+                    // Re-aplicar filtros
+                    val userId = userSession.getUser()?.id
+                    val userType = userSession.getUser()?.userType
+                    if (userId != null) {
+                        val preferencesResult = getPreferencesUseCase(userId)
+                        val schedule = preferencesResult.getOrNull()?.firstOrNull()?.schedule
+                        applyFilter(userType, _state.value.notificationsEnabled, schedule)
+                    }
+
                     loadUnreadCount()
                 },
                 onFailure = { error ->
@@ -126,17 +227,22 @@ class NotificationsViewModel @Inject constructor(
     fun markAllAsRead() {
         viewModelScope.launch {
             val userId = userSession.getUser()?.id ?: return@launch
+            val userType = userSession.getUser()?.userType
 
             notificationRepository.markAllAsRead(userId).fold(
                 onSuccess = {
-                    // Actualizar TODAS localmente
                     allNotifications = allNotifications.map { notification ->
                         notification.copy(
                             status = DeliveryStatus.READ,
-                            readAt = notification.readAt ?: java.time.LocalDateTime.now() // ← Agregar esta línea
+                            readAt = notification.readAt ?: java.time.LocalDateTime.now()
                         )
                     }
-                    applyFilter() // ← Re-aplicar filtro
+
+                    // Re-aplicar filtros
+                    val preferencesResult = getPreferencesUseCase(userId)
+                    val schedule = preferencesResult.getOrNull()?.firstOrNull()?.schedule
+                    applyFilter(userType, _state.value.notificationsEnabled, schedule)
+
                     loadUnreadCount()
                 },
                 onFailure = { /* Ignorar error */ }
@@ -146,11 +252,18 @@ class NotificationsViewModel @Inject constructor(
 
     fun deleteNotification(notificationId: String) {
         viewModelScope.launch {
+            val userId = userSession.getUser()?.id ?: return@launch
+            val userType = userSession.getUser()?.userType
+
             notificationRepository.deleteNotification(notificationId).fold(
                 onSuccess = {
-                    // Actualizar TODAS las notificaciones
                     allNotifications = allNotifications.filter { it.id != notificationId }
-                    applyFilter() // ← Re-aplicar filtro
+
+                    // Re-aplicar filtros
+                    val preferencesResult = getPreferencesUseCase(userId)
+                    val schedule = preferencesResult.getOrNull()?.firstOrNull()?.schedule
+                    applyFilter(userType, _state.value.notificationsEnabled, schedule)
+
                     loadUnreadCount()
                 },
                 onFailure = { /* Ignorar error */ }
@@ -164,7 +277,9 @@ class NotificationsViewModel @Inject constructor(
 
             notificationRepository.getUnreadCount(userId).fold(
                 onSuccess = { count ->
-                    _state.value = _state.value.copy(unreadCount = count)
+                    // Si las notificaciones están desactivadas, mostrar 0
+                    val finalCount = if (_state.value.notificationsEnabled) count else 0
+                    _state.value = _state.value.copy(unreadCount = finalCount)
                 },
                 onFailure = { /* Ignorar error */ }
             )
@@ -177,7 +292,15 @@ class NotificationsViewModel @Inject constructor(
             _state.value = _state.value.copy(isRefreshing = true, error = null)
 
             val userId = userSession.getUser()?.id ?: return@launch
+            val userType = userSession.getUser()?.userType
 
+            // Recargar preferencias
+            val preferencesResult = getPreferencesUseCase(userId)
+            val masterPreference = preferencesResult.getOrNull()?.firstOrNull()
+            val notificationsEnabled = masterPreference?.isEnabled ?: true
+            val schedule = masterPreference?.schedule
+
+            // Recargar notificaciones
             val result = notificationRepository.getNotifications(
                 userId = userId,
                 status = null,
@@ -189,18 +312,22 @@ class NotificationsViewModel @Inject constructor(
                 onSuccess = { notifications ->
                     println("✅ [VIEWMODEL] Refresh exitoso: ${notifications.size} notificaciones")
 
-                    // DEBUG: Mostrar todas las notificaciones con sus estados
-                    notifications.forEach { notification ->
-                        println("🔍 [VIEWMODEL] Notificación: ${notification.id}")
-                        println("   📝 Title: ${notification.title}")
-                        println("   📊 Status: ${notification.status}")
-                        println("   📖 ReadAt: ${notification.readAt}")
-                        println("   🕒 CreatedAt: ${notification.createdAt}")
+                    // Si las notificaciones ESTÁN ACTIVADAS, actualizar todo
+                    if (notificationsEnabled) {
+                        allNotifications = notifications
+                        notificationsBeforeDisable = notifications
+                        println("💾 [VIEWMODEL] Actualizado backup: ${notifications.size} notificaciones")
+                    } else {
+                        println("⚠️ [VIEWMODEL] Notificaciones desactivadas - Manteniendo backup")
+                        // Si están desactivadas, mantener las antiguas
+                        allNotifications = notificationsBeforeDisable
                     }
 
-                    allNotifications = notifications
-                    applyFilter()
-                    _state.value = _state.value.copy(isRefreshing = false)
+                    _state.value = _state.value.copy(
+                        notificationsEnabled = notificationsEnabled,
+                        isRefreshing = false
+                    )
+                    applyFilter(userType, notificationsEnabled, schedule)
                     loadUnreadCount()
                 },
                 onFailure = { error ->

@@ -98,6 +98,7 @@ object NotificationPresentationModule {
         return NotificationsViewModel(
             getNotificationsUseCase = provideGetNotificationsUseCase(context),
             markAsReadUseCase = provideMarkAsReadUseCase(context),
+            getPreferencesUseCase = provideGetNotificationPreferencesUseCase(),
             notificationRepository = provideNotificationRepository(context),
             userSession = UserSession(context)
         )

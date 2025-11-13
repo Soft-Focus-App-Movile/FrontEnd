@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -221,7 +222,12 @@ fun NotificationsScreen(
                     )
                 }
                 state.notifications.isEmpty() -> {
-                    EmptyNotificationsView()
+                    // Si no hay notificaciones Y están desactivadas, mostrar mensaje especial
+                    if (!state.notificationsEnabled) {
+                        NotificationsDisabledView()
+                    } else {
+                        EmptyNotificationsView()
+                    }
                 }
                 else -> {
                     NotificationsList(
@@ -469,6 +475,45 @@ private fun NotificationItem(
 }
 
 @Composable
+private fun NotificationsDisabledView() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.NotificationsOff,
+                contentDescription = null,
+                modifier = Modifier.size(80.dp),
+                tint = Color.Gray.copy(alpha = 0.3f)
+            )
+            Text(
+                text = "Notificaciones desactivadas",
+                style = SourceSansRegular,
+                fontSize = 16.sp,
+                color = Color.Gray,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Activa las notificaciones en configuración para ver tus nuevos mensajes",
+                style = SourceSansRegular,
+                fontSize = 14.sp,
+                color = Color.Gray.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun EmptyNotificationsView() {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -495,7 +540,8 @@ private fun EmptyNotificationsView() {
                 text = "Cuando recibas notificaciones aparecerán aquí",
                 style = SourceSansRegular,
                 fontSize = 14.sp,
-                color = Color.Gray.copy(alpha = 0.7f)
+                color = Color.Gray.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
             )
         }
     }
