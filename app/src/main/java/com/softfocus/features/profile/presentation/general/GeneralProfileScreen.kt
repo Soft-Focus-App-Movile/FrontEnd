@@ -56,6 +56,8 @@ fun GeneralProfileScreen(
     onNavigateBack: () -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
+    onNavigateToHelpSupport: () -> Unit = {},
     onLogout: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -180,13 +182,13 @@ fun GeneralProfileScreen(
             ProfileOptionDrawable(
                 iconRes = R.drawable.ic_policy_privacy,
                 title = "Política de Privacidad",
-                onClick = { }
+                onClick = onNavigateToPrivacyPolicy
             )
 
             ProfileOptionDrawable(
                 iconRes = R.drawable.ic_help_support,
                 title = "Ayuda y Soporte",
-                onClick = { }
+                onClick = onNavigateToHelpSupport
             )
 
             ProfileOption(

@@ -29,7 +29,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun SplashScreen(
     onNavigateToLogin: () -> Unit,
-    onNavigateToHome: () -> Unit = {}
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToAdmin: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -58,7 +59,12 @@ fun SplashScreen(
                         else -> {}
                     }
                 }
-                onNavigateToHome()
+
+                // Navigate based on user type
+                when (user?.userType) {
+                    UserType.ADMIN -> onNavigateToAdmin()
+                    else -> onNavigateToHome()
+                }
             }
         } else {
             onNavigateToLogin()
@@ -93,7 +99,8 @@ fun SplashScreenPreview() {
     SoftFocusMobileTheme {
         SplashScreen(
             onNavigateToLogin = {},
-            onNavigateToHome = {}
+            onNavigateToHome = {},
+            onNavigateToAdmin = {}
         )
     }
 }

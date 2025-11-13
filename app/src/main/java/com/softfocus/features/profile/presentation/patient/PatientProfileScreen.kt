@@ -60,6 +60,8 @@ fun PatientProfileScreen(
     onNavigateToEditProfile: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToNotifications: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
+    onNavigateToHelpSupport: () -> Unit = {},
     onLogout: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -87,25 +89,32 @@ fun PatientProfileScreen(
                     text = "Desvincular Terapeuta",
                     style = CrimsonSemiBold,
                     fontSize = 20.sp,
-                    color = Black
+                    color = Black,
+                    modifier = Modifier.fillMaxWidth()
                 )
             },
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         text = "¿Estás seguro de que deseas desvincularte de tu terapeuta?",
                         style = SourceSansRegular,
                         fontSize = 16.sp,
-                        color = Black
+                        color = Black,
+                        lineHeight = 22.sp,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Text(
                         text = "Esta acción no se puede deshacer.",
                         style = SourceSansRegular,
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        color = Color.Gray,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
@@ -128,12 +137,14 @@ fun PatientProfileScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = RedE8
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(end = 8.dp)
                 ) {
                     Text(
                         text = "Confirmar",
                         color = White,
-                        style = SourceSansBold
+                        style = SourceSansBold,
+                        fontSize = 14.sp
                     )
                 }
             },
@@ -145,12 +156,14 @@ fun PatientProfileScreen(
                     Text(
                         text = "Cancelar",
                         color = Black,
-                        style = SourceSansBold
+                        style = SourceSansBold,
+                        fontSize = 14.sp
                     )
                 }
             },
-            shape = RoundedCornerShape(12.dp),
-            containerColor = White
+            shape = RoundedCornerShape(16.dp),
+            containerColor = White,
+            modifier = Modifier.padding(16.dp)
         )
     }
 
@@ -348,13 +361,13 @@ fun PatientProfileScreen(
             ProfileOptionDrawable(
                 iconRes = R.drawable.ic_policy_privacy,
                 title = "Política de Privacidad",
-                onClick = { }
+                onClick = onNavigateToPrivacyPolicy
             )
 
             ProfileOptionDrawable(
                 iconRes = R.drawable.ic_help_support,
                 title = "Ayuda y Soporte",
-                onClick = { }
+                onClick = onNavigateToHelpSupport
             )
 
             ProfileOption(

@@ -68,8 +68,14 @@ fun NavGraphBuilder.generalNavigation(
                         onNavigateToEditProfile = {
                             navController.navigate(Route.EditProfile.path)
                         },
-                        onNavigateToNotifications = { // ← AGREGAR ESTAS 3 LÍNEAS
+                        onNavigateToNotifications = {
                             navController.navigate(Route.NotificationPreferences.path)
+                        },
+                        onNavigateToPrivacyPolicy = {
+                            navController.navigate(Route.PrivacyPolicy.path)
+                        },
+                        onNavigateToHelpSupport = {
+                            navController.navigate(Route.HelpSupport.path)
                         },
                         onLogout = {
                             SessionManager.logout(context)
