@@ -52,6 +52,8 @@ Route(val path: String) {
     data object GeneralProfile : Route("general_profile")
     data object PatientProfile : Route("patient_profile")
     data object EditProfile : Route("edit_profile")
+    data object PrivacyPolicy : Route("privacy_policy")
+    data object HelpSupport : Route("help_support")
 
     // Psychologist profile routes
     data object PsychologistProfile : Route("psychologist_profile")

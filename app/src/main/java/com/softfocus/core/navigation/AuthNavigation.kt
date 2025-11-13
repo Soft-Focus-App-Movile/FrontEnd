@@ -41,6 +41,11 @@ fun NavGraphBuilder.authNavigation(
                 navController.navigate(destination) {
                     popUpTo(Route.Splash.path) { inclusive = true }
                 }
+            },
+            onNavigateToAdmin = {
+                navController.navigate(Route.AdminUsers.path) {
+                    popUpTo(Route.Splash.path) { inclusive = true }
+                }
             }
         )
     }
@@ -61,7 +66,9 @@ fun NavGraphBuilder.authNavigation(
                 }
             },
             onAdminLoginSuccess = {
-                navController.navigate(Route.AdminUsers.path) {
+                // Navigate to Splash first to let AppNavigation detect user change
+                // and register admin routes before navigating to AdminUsers
+                navController.navigate(Route.Splash.path) {
                     popUpTo(Route.Login.path) { inclusive = true }
                 }
             },

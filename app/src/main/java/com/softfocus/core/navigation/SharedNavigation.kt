@@ -595,4 +595,18 @@ fun NavGraphBuilder.sharedNavigation(
         )
     }
 
+    // Privacy Policy Screen (Shared by General and Patient)
+    composable(Route.PrivacyPolicy.path) {
+        com.softfocus.features.profile.presentation.shared.PrivacyPolicyScreen(
+            onNavigateBack = { navController.popBackStack() }
+        )
+    }
+
+    // Help and Support Screen (Shared by General and Patient)
+    composable(Route.HelpSupport.path) {
+        com.softfocus.features.profile.presentation.shared.HelpSupportScreen(
+            onNavigateBack = { navController.popBackStack() }
+        )
+    }
+
 }

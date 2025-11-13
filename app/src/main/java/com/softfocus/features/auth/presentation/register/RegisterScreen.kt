@@ -125,6 +125,8 @@ fun RegisterScreen(
     }
 
     var acceptedTerms by remember { mutableStateOf(false) }
+    var hasOpenedPrivacyPolicy by remember { mutableStateOf(false) }
+    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isConfirmPasswordVisible by remember { mutableStateOf(false) }
 
@@ -201,6 +203,67 @@ fun RegisterScreen(
     if (psychologistPendingVerification) {
         onNavigateToPendingVerification()
         viewModel.clearRegistrationResult()
+    }
+
+    // Diálogo de Política de Privacidad (obligatorio abrir antes de aceptar)
+    if (showPrivacyPolicyDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPrivacyPolicyDialog = false
+                hasOpenedPrivacyPolicy = true
+            },
+            title = {
+                Text(
+                    text = "Política de Privacidad",
+                    style = CrimsonSemiBold,
+                    fontSize = 20.sp,
+                    color = com.softfocus.ui.theme.Black
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = "En SoftFocus, tu privacidad y seguridad son nuestra máxima prioridad.\n\n" +
+                               "• Todas las conversaciones con nuestro asistente de IA están completamente encriptadas\n" +
+                               "• No almacenamos fotografías originales del análisis de emociones\n" +
+                               "• Todos los mensajes con tu psicólogo están protegidos por encriptación médica\n" +
+                               "• Tus registros diarios y estados de ánimo son completamente privados\n" +
+                               "• Utilizamos encriptación AES-256 para toda tu información\n" +
+                               "• Nunca compartimos tus datos con terceros ni con fines comerciales\n\n" +
+                               "Contacto: softfocusorg@gmail.com\n" +
+                               "Atención 24/7: 952 280 745",
+                        style = com.softfocus.ui.theme.SourceSansRegular,
+                        fontSize = 14.sp,
+                        color = com.softfocus.ui.theme.Black,
+                        lineHeight = 20.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPrivacyPolicyDialog = false
+                        hasOpenedPrivacyPolicy = true
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Green49
+                    )
+                ) {
+                    Text(
+                        text = "Entendido",
+                        color = Color.White,
+                        style = com.softfocus.ui.theme.SourceSansBold
+                    )
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = Color.White
+        )
     }
 
     Column(
@@ -1070,26 +1133,52 @@ fun RegisterScreen(
 
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !isLoading) {
+                    // Abrir el diálogo de política de privacidad
+                    showPrivacyPolicyDialog = true
+                },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
                 checked = acceptedTerms,
-                onCheckedChange = { acceptedTerms = it },
-                enabled = !isLoading,
+                onCheckedChange = {
+                    // Solo permitir marcar si ya abrió el diálogo
+                    if (hasOpenedPrivacyPolicy) {
+                        acceptedTerms = it
+                    } else {
+                        // Si no ha abierto el diálogo, abrirlo
+                        showPrivacyPolicyDialog = true
+                    }
+                },
+                enabled = hasOpenedPrivacyPolicy && !isLoading,
                 colors = CheckboxDefaults.colors(
                     checkedColor = Green49,
                     uncheckedColor = Gray828,
-                    checkmarkColor = Color.White
+                    checkmarkColor = Color.White,
+                    disabledCheckedColor = Gray828,
+                    disabledUncheckedColor = Gray828
                 )
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Acepto la política de privacidad",
-                style = SourceSansRegular,
-                fontSize = 14.sp,
-                color = Gray828
-            )
+            Column {
+                Text(
+                    text = "Acepto la política de privacidad",
+                    style = SourceSansRegular,
+                    fontSize = 14.sp,
+                    color = if (hasOpenedPrivacyPolicy) Gray828 else Color.Gray
+                )
+                if (!hasOpenedPrivacyPolicy) {
+                    Text(
+                        text = "(Toca para leer)",
+                        style = SourceSansRegular,
+                        fontSize = 12.sp,
+                        color = Green37,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))

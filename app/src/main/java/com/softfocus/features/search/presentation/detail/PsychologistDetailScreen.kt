@@ -45,12 +45,12 @@ fun PsychologistDetailScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Volver",
-                            tint = Color.White
+                            tint = Green37
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = Color.White
                 )
             )
         },
@@ -116,52 +116,50 @@ private fun PsychologistDetailContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Header con foto y nombre
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(280.dp)
-                .background(Green49)
+        // Header con foto
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
+            // Cuadro verde con la foto ocupando todo el espacio
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(Green49),
+                contentAlignment = Alignment.Center
+            ) {
+                // Foto de perfil que ocupa todo el espacio verde
+                if (psychologist.profileImageUrl != null) {
+                    AsyncImage(
+                        model = psychologist.profileImageUrl,
+                        contentDescription = psychologist.fullName,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    // Si no hay foto, mostrar icono centrado
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.size(100.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Nombre a la izquierda
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
-                // Foto de perfil
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (psychologist.profileImageUrl != null) {
-                        AsyncImage(
-                            model = psychologist.profileImageUrl,
-                            contentDescription = psychologist.fullName,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = Green49,
-                            modifier = Modifier.size(70.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Text(
                     text = psychologist.fullName,
                     style = CrimsonSemiBold,
                     fontSize = 24.sp,
-                    color = Color.White
+                    color = Black
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -180,17 +178,19 @@ private fun PsychologistDetailContent(
                             text = String.format("%.1f", psychologist.averageRating),
                             style = SourceSansSemiBold,
                             fontSize = 18.sp,
-                            color = Color.White
+                            color = Black
                         )
                         Text(
                             text = " (${psychologist.totalReviews} reseñas)",
                             style = SourceSansRegular,
                             fontSize = 14.sp,
-                            color = Color.White.copy(alpha = 0.8f)
+                            color = Gray787
                         )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         // Contenido
@@ -202,10 +202,8 @@ private fun PsychologistDetailContent(
             // Información básica
             InfoCard {
                 InfoRow(label = "Años de experiencia", value = "${psychologist.yearsOfExperience} años")
-                if (psychologist.city != null) {
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-                    InfoRow(label = "Ciudad", value = psychologist.city)
-                }
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                InfoRow(label = "Ciudad", value = psychologist.city ?: "No especificado")
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
                 InfoRow(
                     label = "Disponibilidad",
@@ -217,61 +215,41 @@ private fun PsychologistDetailContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Formación académica
-            if (psychologist.university != null || psychologist.degree != null) {
-                SectionTitle("Formación Académica")
-                Spacer(modifier = Modifier.height(8.dp))
-                InfoCard {
-                    if (psychologist.university != null) {
-                        InfoRow(label = "Universidad", value = psychologist.university)
-                    }
-                    if (psychologist.degree != null) {
-                        if (psychologist.university != null) {
-                            Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
-                        InfoRow(label = "Grado", value = psychologist.degree)
-                    }
-                    if (psychologist.graduationYear != null) {
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        InfoRow(label = "Año de graduación", value = psychologist.graduationYear.toString())
-                    }
-                }
+            SectionTitle("Formación Académica")
+            Spacer(modifier = Modifier.height(8.dp))
+            InfoCard {
+                InfoRow(label = "Universidad", value = psychologist.university ?: "No especificado")
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                InfoRow(label = "Grado", value = psychologist.degree ?: "No especificado")
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                InfoRow(label = "Año de graduación", value = psychologist.graduationYear?.toString() ?: "No especificado")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Información profesional
-            if (psychologist.licenseNumber != null || psychologist.professionalCollege != null) {
-                SectionTitle("Colegiatura")
-                Spacer(modifier = Modifier.height(8.dp))
-                InfoCard {
-                    if (psychologist.licenseNumber != null) {
-                        InfoRow(label = "Número de colegiatura", value = psychologist.licenseNumber)
-                    }
-                    if (psychologist.professionalCollege != null) {
-                        if (psychologist.licenseNumber != null) {
-                            Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
-                        InfoRow(label = "Colegio profesional", value = psychologist.professionalCollege)
-                    }
-                    if (psychologist.collegeRegion != null) {
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
-                        InfoRow(label = "Región", value = psychologist.collegeRegion)
-                    }
-                }
+            SectionTitle("Colegiatura")
+            Spacer(modifier = Modifier.height(8.dp))
+            InfoCard {
+                InfoRow(label = "Número de colegiatura", value = psychologist.licenseNumber ?: "No especificado")
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                InfoRow(label = "Colegio profesional", value = psychologist.professionalCollege ?: "No especificado")
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                InfoRow(label = "Región", value = psychologist.collegeRegion ?: "No especificado")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Especialidades
-            if (psychologist.specialties.isNotEmpty()) {
-                SectionTitle("Especialidades")
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+            SectionTitle("Especialidades")
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    if (psychologist.specialties.isNotEmpty()) {
                         psychologist.specialties.forEach { specialty ->
                             Row(modifier = Modifier.padding(vertical = 4.dp)) {
                                 Text(
@@ -289,52 +267,62 @@ private fun PsychologistDetailContent(
                                 )
                             }
                         }
+                    } else {
+                        Text(
+                            text = "No se han especificado especialidades",
+                            style = SourceSansRegular,
+                            fontSize = 14.sp,
+                            color = Gray787
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Bio profesional
-            if (psychologist.professionalBio != null) {
-                SectionTitle("Acerca de")
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = psychologist.professionalBio,
-                        style = SourceSansRegular,
-                        fontSize = 14.sp,
-                        color = Color.Black,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Justify,
-                        lineHeight = 20.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle("Acerca de")
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = psychologist.professionalBio ?: "El psicólogo no ha proporcionado información adicional.",
+                    style = SourceSansRegular,
+                    fontSize = 14.sp,
+                    color = if (psychologist.professionalBio != null) Color.Black else Gray787,
+                    modifier = Modifier.padding(16.dp),
+                    textAlign = TextAlign.Justify,
+                    lineHeight = 20.sp
+                )
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Idiomas
-            if (!psychologist.languages.isNullOrEmpty()) {
-                SectionTitle("Idiomas")
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = psychologist.languages.joinToString(", "),
-                        style = SourceSansRegular,
-                        fontSize = 14.sp,
-                        color = Color.Black,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+            SectionTitle("Idiomas")
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = if (!psychologist.languages.isNullOrEmpty()) {
+                        psychologist.languages.joinToString(", ")
+                    } else {
+                        "No especificado"
+                    },
+                    style = SourceSansRegular,
+                    fontSize = 14.sp,
+                    color = if (!psychologist.languages.isNullOrEmpty()) Color.Black else Gray787,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Botón de contacto
             Button(
@@ -407,28 +395,28 @@ fun PsychologistDetailContentPreview() {
     PsychologistDetailContent(
         psychologist = Psychologist(
             id = "1",
-            fullName = "Dra. María García López",
+            fullName = "Dra. Patricia Sanchez",
             profileImageUrl = null,
-            professionalBio = "Psicóloga clínica con más de 8 años de experiencia en terapia cognitivo-conductual. Especializada en el tratamiento de ansiedad, depresión y estrés. Mi enfoque es crear un espacio seguro y de confianza donde puedas explorar tus emociones y desarrollar herramientas efectivas para tu bienestar mental.",
-            specialties = listOf("Ansiedad", "Depresión", "Estrés", "Terapia Cognitivo-Conductual"),
+            professionalBio = null,
+            specialties = listOf(),
             yearsOfExperience = 8,
-            city = "Lima",
-            languages = listOf("Español", "Inglés"),
+            city = null,
+            languages = null,
             isAcceptingNewPatients = true,
-            averageRating = 4.8,
-            totalReviews = 127,
+            averageRating = null,
+            totalReviews = 0,
             allowsDirectMessages = true,
             targetAudience = listOf("Adultos", "Adolescentes"),
-            email = "maria.garcia@example.com",
-            phone = "+51 999 888 777",
-            whatsApp = "+51999888777",
-            corporateEmail = "maria@clinica.com",
-            university = "Universidad Nacional Mayor de San Marcos",
-            graduationYear = 2015,
-            degree = "Licenciatura en Psicología",
-            licenseNumber = "CPsP 12345",
-            professionalCollege = "Colegio de Psicólogos del Perú",
-            collegeRegion = "Lima"
+            email = "patricia.sanchez@example.com",
+            phone = null,
+            whatsApp = null,
+            corporateEmail = null,
+            university = null,
+            graduationYear = null,
+            degree = null,
+            licenseNumber = null,
+            professionalCollege = null,
+            collegeRegion = null
         ),
         onContactClick = {}
     )

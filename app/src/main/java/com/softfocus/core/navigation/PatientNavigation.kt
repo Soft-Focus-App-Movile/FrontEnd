@@ -61,6 +61,12 @@ fun NavGraphBuilder.patientNavigation(
                     onNavigateToNotifications = {
                         navController.navigate(Route.NotificationPreferences.path)
                     },
+                    onNavigateToPrivacyPolicy = {
+                        navController.navigate(Route.PrivacyPolicy.path)
+                    },
+                    onNavigateToHelpSupport = {
+                        navController.navigate(Route.HelpSupport.path)
+                    },
                     onLogout = {
                         SessionManager.logout(context)
                         navController.navigate(Route.Login.path) {

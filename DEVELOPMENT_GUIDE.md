@@ -776,7 +776,7 @@ http://98.90.172.251:5000/swagger/index.html
    - Password: Patient123!
 > 
   ---
-HJBMDNV0
+3AC88HX0
 👨‍⚕ Psicólogos Verificados (3)
 
 1. Dra. Patricia Sanchez

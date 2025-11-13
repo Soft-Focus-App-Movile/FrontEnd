@@ -41,6 +41,7 @@ fun AdminUsersScreen(
             .fillMaxSize()
             .background(Color.White)
             .padding(16.dp)
+            .padding(top = 35.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

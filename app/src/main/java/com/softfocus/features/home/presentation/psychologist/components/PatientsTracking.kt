@@ -116,12 +116,12 @@ fun EmptyPatientsState() {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Conecta con alguno compartiendo tu código de invitación",
+            text = "Conecta compartiendo tu código de invitación",
             style = SourceSansRegular,
             fontSize = 14.sp,
             color = Gray828,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
+            modifier = Modifier.padding(horizontal = 30.dp)
         )
     }
 }
