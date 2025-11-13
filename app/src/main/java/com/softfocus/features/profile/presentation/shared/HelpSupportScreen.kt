@@ -100,6 +100,61 @@ fun HelpSupportScreen(
                 description = "Para consultas generales, sugerencias o información sobre SoftFocus"
             )
 
+            // Landing Page
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFF5F5F5)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Language,
+                        contentDescription = null,
+                        tint = Green37,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Sitio Web",
+                            style = SourceSansBold,
+                            fontSize = 16.sp,
+                            color = Black,
+                            lineHeight = 22.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "soft-focus-61053.web.app",
+                            style = SourceSansBold,
+                            fontSize = 16.sp,
+                            color = Blue77,
+                            lineHeight = 22.sp,
+                            modifier = Modifier.clickable {
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    data = Uri.parse("https://soft-focus-61053.web.app")
+                                }
+                                context.startActivity(intent)
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Visita nuestra página web oficial para más información sobre SoftFocus",
+                            style = SourceSansRegular,
+                            fontSize = 14.sp,
+                            color = Gray828,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            }
+
             // Números de soporte específicos
             SectionTitle("Soporte Especializado")
 
