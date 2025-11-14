@@ -1,7 +1,5 @@
 package com.softfocus.features.notifications.data.models.response
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.google.gson.annotations.SerializedName
 import com.softfocus.features.notifications.domain.models.*
 import java.time.LocalDateTime
