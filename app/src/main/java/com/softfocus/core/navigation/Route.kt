@@ -64,6 +64,9 @@ Route(val path: String) {
     data object PsychologistPlan : Route("psychologist_plan")
     data object PsychologistStats : Route("psychologist_stats")
 
+    data object MyPlan : Route("my_plan")
+    data object PatientPlan : Route("patient_plan")
+
     // --- RUTAS DE THERAPY (PSICÓLOGO) ---
     object PsychologistPatientList : Route("psychologist_patient_list")
 

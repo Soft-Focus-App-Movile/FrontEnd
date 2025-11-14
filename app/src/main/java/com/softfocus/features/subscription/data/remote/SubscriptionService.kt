@@ -13,6 +13,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface SubscriptionService {
     @GET(ApiConstants.Subscription.ME)
@@ -43,4 +44,9 @@ interface SubscriptionService {
 
     @POST(ApiConstants.Subscription.INITIALIZE)
     suspend fun initializeSubscription(): Response<SubscriptionResponseDto>
+
+    @POST(ApiConstants.Subscription.CHECKOUT_SUCCESS)
+    suspend fun handleCheckoutSuccess(
+        @Query("sessionId") sessionId: String
+    ): Response<SubscriptionResponseDto>
 }

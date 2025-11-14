@@ -62,6 +62,7 @@ fun PatientProfileScreen(
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToPrivacyPolicy: () -> Unit = {},
     onNavigateToHelpSupport: () -> Unit = {},
+    onNavigateToMyPlan: () -> Unit = {},
     onLogout: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -355,7 +356,7 @@ fun PatientProfileScreen(
             ProfileOptionDrawable(
                 iconRes = R.drawable.ic_subscription_plan,
                 title = "Mi plan",
-                onClick = { }
+                onClick = onNavigateToMyPlan
             )
 
             ProfileOptionDrawable(

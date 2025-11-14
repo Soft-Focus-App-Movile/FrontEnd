@@ -52,7 +52,6 @@ fun NavGraphBuilder.patientNavigation(
             ) {
                 PatientProfileScreen(
                     onNavigateToConnect = {
-                        // Después de desvincularse, navegar al Home y limpiar la pila
                         navController.navigate(Route.Home.path) {
                             popUpTo(Route.Home.path) { inclusive = true }
                         }
@@ -71,6 +70,9 @@ fun NavGraphBuilder.patientNavigation(
                     },
                     onNavigateToHelpSupport = {
                         navController.navigate(Route.HelpSupport.path)
+                    },
+                    onNavigateToMyPlan = {
+                        navController.navigate(Route.PatientPlan.path)
                     },
                     onLogout = {
                         SessionManager.logout(context)
@@ -120,15 +122,11 @@ fun NavGraphBuilder.patientNavigation(
             Box(modifier = Modifier.padding(paddingValues)) {
                 com.softfocus.features.library.presentation.general.browse.GeneralLibraryScreen(
                     onContentClick = { content ->
-                        // Navegar a ContentDetailScreen para Movies y Places
-                        // Abrir directamente Spotify/YouTube para Music y Videos
                         when (content.type) {
                             com.softfocus.features.library.domain.models.ContentType.Movie -> {
-                                // Navegar a la pantalla de detalle
                                 navController.navigate(Route.LibraryGeneralDetail.createRoute(content.id))
                             }
                             com.softfocus.features.library.domain.models.ContentType.Weather -> {
-                                // Weather solo muestra información, no navega
                                 Toast.makeText(context, "Información del clima en tu ubicación actual", Toast.LENGTH_SHORT).show()
                             }
                             com.softfocus.features.library.domain.models.ContentType.Music -> {
@@ -168,6 +166,21 @@ fun NavGraphBuilder.patientNavigation(
                                 }
                             }
                         }
+                    }
+                )
+            }
+        }
+    }
+
+    composable(Route.PatientPlan.path) {
+        Scaffold(
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            bottomBar = { PatientBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                com.softfocus.features.subscription.presentation.PatientPlanScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }

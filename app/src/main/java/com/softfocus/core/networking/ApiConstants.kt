@@ -174,6 +174,7 @@ object ApiConstants {
         const val USAGE = "subscriptions/usage"
         const val CHECK_ACCESS = "subscriptions/check-access/{featureType}"
         const val UPGRADE_CHECKOUT = "subscriptions/upgrade/checkout"
+        const val CHECKOUT_SUCCESS = "subscriptions/checkout/success"
         const val CANCEL = "subscriptions/cancel"
         const val TRACK_USAGE = "subscriptions/track-usage"
         const val INITIALIZE = "subscriptions/initialize"

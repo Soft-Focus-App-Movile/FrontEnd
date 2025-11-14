@@ -79,7 +79,7 @@ fun NavGraphBuilder.psychologistNavigation(
                         navController.navigate(Route.NotificationPreferences.path)
                     },
                     onNavigateToPlan = {
-                        navController.navigate(Route.PsychologistPlan.path)
+                        navController.navigate(Route.MyPlan.path)
                     },
                     onNavigateToStats = {
                         navController.navigate(Route.PsychologistStats.path)
@@ -88,7 +88,9 @@ fun NavGraphBuilder.psychologistNavigation(
                         navController.navigate(Route.ProfessionalData.path)
                     },
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.navigate(Route.Home.path) {
+                            popUpTo(Route.Home.path) { inclusive = true }
+                        }
                     },
                     onLogout = {
                         SessionManager.logout(context)
@@ -363,6 +365,21 @@ fun NavGraphBuilder.psychologistNavigation(
                                 Toast.makeText(context, "Contenido no disponible para visualización", Toast.LENGTH_SHORT).show()
                             }
                         }
+                    }
+                )
+            }
+        }
+    }
+
+    composable(Route.MyPlan.path) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            bottomBar = { PsychologistBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                com.softfocus.features.subscription.presentation.MyPlanScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }
