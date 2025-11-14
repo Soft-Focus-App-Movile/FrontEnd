@@ -99,7 +99,8 @@ fun NavGraphBuilder.sharedNavigation(
                                     Route.PsychologistPatientDetail.createRoute(
                                         patientId = patient.patientId,
                                         relationshipId = patient.id,
-                                        startDate = patient.startDate
+                                        startDate = patient.startDate,
+                                        profilePhotoUrl = patient.profilePhotoUrl
                                     )
                                 )
                             }

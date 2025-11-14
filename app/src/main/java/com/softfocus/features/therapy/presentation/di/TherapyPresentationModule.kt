@@ -18,6 +18,12 @@ import com.softfocus.features.library.assignments.domain.repositories.Assignment
 import com.softfocus.features.library.data.remote.AssignmentsService
 import com.softfocus.features.library.data.repositories.LibraryRepositoryImpl
 import com.softfocus.features.library.domain.repositories.LibraryRepository
+import com.softfocus.features.profile.data.di.ProfileDataModule
+import com.softfocus.features.profile.data.remote.ProfileService
+import com.softfocus.features.profile.domain.repositories.ProfileRepository
+import com.softfocus.features.search.data.remote.PsychologistSearchService
+import com.softfocus.features.search.data.repositories.SearchRepositoryImpl
+import com.softfocus.features.search.domain.repositories.SearchRepository
 import com.softfocus.features.therapy.domain.usecases.GetChatHistoryUseCase
 import com.softfocus.features.therapy.domain.usecases.GetLastReceivedMessageUseCase
 import com.softfocus.features.therapy.domain.usecases.GetMyPatientsUseCase
@@ -32,6 +38,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import com.softfocus.features.therapy.data.remote.SignalRService
+import com.softfocus.features.therapy.domain.usecases.GetRelationshipWithPatientUseCase
+import com.softfocus.features.therapy.presentation.patient.PsychologistChatViewModel
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatViewModel
 
 object TherapyPresentationModule {
 
@@ -97,8 +106,24 @@ object TherapyPresentationModule {
         )
     }
 
+    private fun getPsychologistSearchService(): PsychologistSearchService {
+        return getRetrofit().create(PsychologistSearchService::class.java)
+    }
+
+    private fun getSearchRepository(): SearchRepository {
+        val context = applicationContext ?: throw IllegalStateException("TherapyPresentationModule not initialized")
+        return SearchRepositoryImpl(
+            service = getPsychologistSearchService(),
+            context = context
+        )
+    }
+
     fun getGetMyRelationshipUseCase(): GetMyRelationshipUseCase {
         return GetMyRelationshipUseCase(getTherapyRepository())
+    }
+
+    fun getGetRelationshipWithPatientUseCase(): GetRelationshipWithPatientUseCase {
+        return GetRelationshipWithPatientUseCase(getTherapyRepository())
     }
 
     fun getGetMyPatientsUseCase(): GetMyPatientsUseCase {
@@ -159,5 +184,32 @@ object TherapyPresentationModule {
             repository = getAssignmentsRepository()
         )
     }
+
+    fun getPatientChatViewModel(savedStateHandle: SavedStateHandle): PatientChatViewModel {
+        val context = applicationContext ?: throw IllegalStateException("TherapyPresentationModule not initialized")
+        return PatientChatViewModel(
+            savedStateHandle = savedStateHandle,
+            getPatientProfileUseCase = getGetPatientProfileUseCase(),
+            getRelationshipWithPatientUseCase = getGetRelationshipWithPatientUseCase(),
+            getChatHistoryUseCase = getGetChatHistoryUseCase(),
+            sendChatMessageUseCase = getSendChatMessageUseCase(),
+            signalRService = getSignalRService(),
+            userSession = UserSession(context)
+        )
+    }
+
+    fun getPsychologistChatViewModel(): PsychologistChatViewModel {
+        val context = applicationContext ?: throw IllegalStateException("TherapyPresentationModule not initialized")
+        return PsychologistChatViewModel(
+            userSession = UserSession(context),
+            getMyRelationshipUseCase = getGetMyRelationshipUseCase(),
+            getChatHistoryUseCase = getGetChatHistoryUseCase(),
+            sendChatMessageUseCase = getSendChatMessageUseCase(),
+            signalRService = getSignalRService(),
+            searchRepository = getSearchRepository()
+        )
+    }
+
+
 
 }

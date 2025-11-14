@@ -13,12 +13,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavHostController
 import com.softfocus.ui.theme.CrimsonSemiBold
 import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.SourceSansRegular
 import com.softfocus.core.navigation.Route
+import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.components.PatientDetailHeader
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatScreen
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatViewModel
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.SummaryTab
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.TasksTab
 
@@ -38,7 +42,8 @@ fun PatientDetailScreen(
     onBack: () -> Unit,
     patientId: String,
     relationshipId: String,
-    patientName: String
+    patientName: String,
+    profilePhotoUrl: String
 ) {
     // Estado para saber qué pestaña está seleccionada
     var selectedTabIndex by remember { mutableStateOf(0) }
@@ -46,6 +51,7 @@ fun PatientDetailScreen(
     val summaryState by viewModel.summaryState.collectAsState()
     val checkInState by viewModel.checkInState.collectAsState()
     val tasksState by viewModel.tasksState.collectAsState()
+
 
     Scaffold(
         topBar = { PatientDetailTopBar(onBack = onBack) }
@@ -86,7 +92,8 @@ fun PatientDetailScreen(
                                         Route.PsychologistPatientChat.createRoute(
                                             patientId = patientId,
                                             relationshipId = relationshipId,
-                                            patientName = patientName
+                                            patientName = patientName,
+                                            profilePhotoUrl = profilePhotoUrl
                                         )
                                     )
                                 }

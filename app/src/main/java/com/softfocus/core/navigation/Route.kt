@@ -67,24 +67,38 @@ Route(val path: String) {
     // --- RUTAS DE THERAPY (PSICÓLOGO) ---
     object PsychologistPatientList : Route("psychologist_patient_list")
 
-    data object PsychologistPatientDetail : Route("psychologist_patient_detail/{patientId}/{relationshipId}/{startDate}") {
+    data object PsychologistPatientDetail : Route("psychologist_patient_detail/{patientId}/{relationshipId}/{startDate}?profilePhotoUrl={profilePhotoUrl}") {
         fun createRoute(
             patientId: String,
             relationshipId: String,
-            startDate: String // La obtenemos de PatientDirectory
+            startDate: String, // La obtenemos de PatientDirectory
+            profilePhotoUrl: String?
         ): String {
             val charset = StandardCharsets.UTF_8.name()
             // Codificamos solo la fecha por si acaso
             val encodedDate = URLEncoder.encode(startDate, charset)
+            val encodedPhotoUrl = profilePhotoUrl?.let { URLEncoder.encode(it, charset) } ?: "null"
 
-            return "psychologist_patient_detail/$patientId/$relationshipId/$encodedDate"
+            return "psychologist_patient_detail/$patientId/$relationshipId/$encodedDate?profilePhotoUrl=$encodedPhotoUrl"
         }
     }
 
-    data object PsychologistPatientChat : Route("patient_chat/{patientId}/{relationshipId}/{patientName}") {
-        fun createRoute(patientId: String, relationshipId: String, patientName: String) =
-            "patient_chat/$patientId/$relationshipId/$patientName"
+    data object PsychologistPatientChat : Route("patient_chat/{patientId}/{relationshipId}/{patientName}?profilePhotoUrl={profilePhotoUrl}") {
+        fun createRoute(
+            patientId: String,
+            relationshipId: String,
+            patientName: String,
+            profilePhotoUrl: String?
+        ): String {
+            val charset = StandardCharsets.UTF_8.name()
+            val encodedName = URLEncoder.encode(patientName, charset)
+            val encodedPhotoUrl = profilePhotoUrl?.let { URLEncoder.encode(it, charset) } ?: "null"
+
+            return "patient_chat/$patientId/$relationshipId/$encodedName?profilePhotoUrl=$encodedPhotoUrl"
+        }
     }
+
+    data object PatientPsychologistChat : Route("psychologist_chat")
 
     data object CrisisAlerts : Route("crisis_alerts")
 

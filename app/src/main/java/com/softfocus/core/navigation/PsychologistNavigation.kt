@@ -39,6 +39,7 @@ import com.softfocus.features.therapy.presentation.psychologist.patiendetail.Pat
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.PatientDetailViewModel
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatViewModel
 
 
 /**
@@ -189,14 +190,13 @@ fun NavGraphBuilder.psychologistNavigation(
                 PatientListScreen(
                     viewModel = patientListViewModel,
                     onPatientClick = { patient ->
-                        // 3. (Extra) Manejar la navegación al detalle del paciente
-                        // Esta ruta ya existe en tu archivo Route.kt
                         val encodedPatientName = URLEncoder.encode(patient.patientName, "UTF-8")
                         navController.navigate(
                             Route.PsychologistPatientDetail.createRoute(
                                 patientId = patient.patientId,
                                 relationshipId = patient.id,
-                                startDate = patient.startDate
+                                startDate = patient.startDate,
+                                profilePhotoUrl = patient.profilePhotoUrl
                             )
                         )
                     },
@@ -211,7 +211,8 @@ fun NavGraphBuilder.psychologistNavigation(
         arguments = listOf(
             navArgument("patientId") { type = NavType.StringType },
             navArgument("relationshipId") { type = NavType.StringType },
-            navArgument("startDate") { type = NavType.StringType }
+            navArgument("startDate") { type = NavType.StringType },
+            navArgument("profilePhotoUrl") { type = NavType.StringType; nullable = true }
         ),
     ) { backStackEntry ->
         // Extraemos los argumentos
@@ -219,6 +220,9 @@ fun NavGraphBuilder.psychologistNavigation(
         val relationshipId = backStackEntry.arguments?.getString("relationshipId") ?: ""
         // Decodificamos el nombre
         val patientName = URLDecoder.decode(backStackEntry.arguments?.getString("patientName") ?: "Paciente", "UTF-8")
+        val profilePhotoUrl = backStackEntry.arguments?.getString("profilePhotoUrl")?.let {
+            if (it == "null") null else URLDecoder.decode(it, "UTF-8")
+        }
 
         // Creamos el ViewModel pasándole los IDs
         val viewModel: PatientDetailViewModel = viewModel(
@@ -246,7 +250,8 @@ fun NavGraphBuilder.psychologistNavigation(
                     onBack = { navController.popBackStack() },
                     patientId = patientId,
                     relationshipId = relationshipId,
-                    patientName = patientName
+                    patientName = patientName,
+                    profilePhotoUrl = "$profilePhotoUrl"
                 )
             }
         }
@@ -258,21 +263,33 @@ fun NavGraphBuilder.psychologistNavigation(
         arguments = listOf(
             navArgument("patientId") { type = NavType.StringType },
             navArgument("relationshipId") { type = NavType.StringType },
-            navArgument("patientName") { type = NavType.StringType }
+            navArgument("patientName") { type = NavType.StringType },
+            navArgument("profilePhotoUrl") { type = NavType.StringType; nullable = true }
         )
     ) { backStackEntry ->
-        // Extraemos los argumentos (los necesitamos para la TopBar y el ViewModel)
-        val patientId = backStackEntry.arguments?.getString("patientId") ?: ""
-        val relationshipId = backStackEntry.arguments?.getString("relationshipId") ?: ""
-        val patientName = URLDecoder.decode(backStackEntry.arguments?.getString("patientName") ?: "Paciente", "UTF-8")
 
-        // (Aquí también crearías un ViewModel para el Chat si lo tuvieras)
-        // val chatViewModel: PatientChatViewModel = viewModel(...)
+        val chatViewModel: PatientChatViewModel = remember(backStackEntry) {
+            val factory = object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return TherapyPresentationModule.getPatientChatViewModel(
+                        backStackEntry.savedStateHandle
+                    ) as T
+                }
+            }
+            ViewModelProvider(backStackEntry, factory)[PatientChatViewModel::class.java]
+        }
 
-        PatientChatScreen(
-            navController = navController,
-            patientName = patientName
-        )
+        Scaffold(
+            containerColor = Color(0xFFF8FFEA),
+            bottomBar = { PsychologistBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)){
+                PatientChatScreen(
+                    viewModel = chatViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+        }
     }
 
 

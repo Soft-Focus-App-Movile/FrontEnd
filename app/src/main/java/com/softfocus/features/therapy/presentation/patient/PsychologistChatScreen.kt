@@ -1,4 +1,4 @@
-package com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs
+package com.softfocus.features.therapy.presentation.patient
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.BorderStroke
@@ -35,11 +35,13 @@ import coil3.compose.rememberAsyncImagePainter
 import com.example.doctorapp.chatBubbleOther
 import com.example.doctorapp.chatBubbleUser
 import com.example.doctorapp.doctorNameColor
+import com.example.doctorapp.lightGreenBg
 import com.softfocus.R
 import com.softfocus.core.navigation.Route
 import com.softfocus.features.therapy.domain.models.ChatMessage
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.PatientSummaryState
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.lightGrayText
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatViewModel
 import com.softfocus.ui.components.ProfileAvatar
 import com.softfocus.ui.components.navigation.PsychologistBottomNav
 import com.softfocus.ui.theme.CrimsonSemiBold
@@ -54,9 +56,9 @@ val chatBubbleWhite = Color(0xFFFFFFFF)
 // --- Pantalla Principal de Chat ---
 
 @Composable
-fun PatientChatScreen(
-    viewModel: PatientChatViewModel,
-    onNavigateBack: () -> Unit
+fun PsychologistChatScreen(
+    viewModel: PsychologistChatViewModel,
+    navController: NavHostController
 ) {
     // --- 4. OBTENER ESTADO DEL VIEWMODEL ---
     val uiState by viewModel.uiState.collectAsState()
@@ -79,7 +81,7 @@ fun PatientChatScreen(
 
         ChatHeader(
             summaryState = summaryState,
-            onNavigateBack = onNavigateBack
+            navController = navController
         )
 
         if (uiState.isLoading && uiState.messages.isEmpty()) {
@@ -114,8 +116,7 @@ fun PatientChatScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatHeader(summaryState: PatientSummaryState, onNavigateBack: () -> Unit) {
-
+fun ChatHeader(summaryState: PsychologistSummaryState, navController: NavHostController) {
     Surface(
         color = Color(0xFFCBCD9D),
         modifier = Modifier.fillMaxWidth()
@@ -126,22 +127,16 @@ fun ChatHeader(summaryState: PatientSummaryState, onNavigateBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Contenedor clickeable para imagen y nombre
             Row(
+                modifier = Modifier.clickable {  },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Volver",
-                        tint = Color.White
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
                 Box {
                     // Placeholder para la imagen de perfil
                     AsyncImage(
                         model = summaryState.profilePhotoUrl,
-                        contentDescription = "Foto de perfil del paciente",
+                        contentDescription = "Foto de perfil de psicologo",
                         modifier = Modifier
                             .size(44.dp)
                             .clip(CircleShape)
@@ -154,11 +149,26 @@ fun ChatHeader(summaryState: PatientSummaryState, onNavigateBack: () -> Unit) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = summaryState.patientName,
+                        text = summaryState.psychologistName,
                         style = CrimsonSemiBold.copy(fontSize = 23.sp),
                         color = Color.White
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.weight(1f)) // Empuja el ícono a la derecha
+
+            IconButton(onClick = {
+                navController.navigate(
+                    Route.Library.path
+                )
+            }) {
+                Icon(
+                    imageVector = Icons.Outlined.ContentPaste,
+                    contentDescription = "Botón de portapapeles",
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.White
+                )
             }
         }
     }
@@ -215,7 +225,7 @@ fun ChatContent(
     messages: List<ChatMessage>,
     modifier: Modifier = Modifier,
     listState: androidx.compose.foundation.lazy.LazyListState,
-    viewModel: PatientChatViewModel
+    viewModel: PsychologistChatViewModel
 ) {
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),

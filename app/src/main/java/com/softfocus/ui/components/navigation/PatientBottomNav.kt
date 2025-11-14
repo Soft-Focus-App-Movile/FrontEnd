@@ -139,7 +139,7 @@ fun PatientBottomNav(navController: NavController) {
 
         NavigationBarItem(
             icon = {
-                BottomNavIcon(isSelected = false) {
+                BottomNavIcon(isSelected = currentRoute == Route.PatientPsychologistChat.path) {
                     Icon(
                         imageVector = Icons.Outlined.Psychology,
                         contentDescription = "Mi terapeuta",
@@ -148,9 +148,12 @@ fun PatientBottomNav(navController: NavController) {
                 }
             },
             label = { Text("Mi terapeuta", fontSize = 12.sp, style = SourceSansRegular) },
-            selected = false,
-            onClick = { /* No implementado aún */ },
-            enabled = false,
+            selected = currentRoute == Route.PatientPsychologistChat.path,
+            onClick = {
+                if (currentRoute != Route.PatientPsychologistChat.path) {
+                    navController.navigate(Route.PatientPsychologistChat.path)
+                }
+            },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Green29,
                 selectedTextColor = Green29,

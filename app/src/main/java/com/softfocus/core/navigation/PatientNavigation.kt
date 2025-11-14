@@ -9,7 +9,9 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -17,6 +19,9 @@ import com.softfocus.features.profile.presentation.patient.PatientProfileScreen
 import com.softfocus.features.profile.presentation.edit.EditProfileScreen
 import com.softfocus.ui.components.navigation.PatientBottomNav
 import com.softfocus.core.utils.SessionManager
+import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
+import com.softfocus.features.therapy.presentation.patient.PsychologistChatScreen
+import com.softfocus.ui.components.navigation.PsychologistBottomNav
 
 
 /**
@@ -85,6 +90,25 @@ fun NavGraphBuilder.patientNavigation(
                 navController.popBackStack()
             }
         )
+    }
+
+    composable(Route.PatientPsychologistChat.path) {
+        Scaffold(
+            containerColor = Color(0xFFF8FFEA),
+            bottomBar = { PatientBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)){
+
+                val patientPsychologistChatViewModel = remember {
+                    TherapyPresentationModule.getPsychologistChatViewModel()
+                }
+
+                PsychologistChatScreen(
+                    viewModel = patientPsychologistChatViewModel,
+                    navController = navController
+                )
+            }
+        }
     }
 
     // Library Screen for Patient

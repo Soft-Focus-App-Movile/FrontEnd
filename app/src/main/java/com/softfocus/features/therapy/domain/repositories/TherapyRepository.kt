@@ -10,6 +10,8 @@ interface TherapyRepository {
 
     suspend fun getMyRelationship(): Result<TherapeuticRelationship?>
 
+    suspend fun getRelationshipWithPatient(patientId: String): Result<String>
+
     suspend fun connectWithPsychologist(connectionCode: String): Result<String>
 
     suspend fun getMyPatients(): Result<List<PatientDirectory>>

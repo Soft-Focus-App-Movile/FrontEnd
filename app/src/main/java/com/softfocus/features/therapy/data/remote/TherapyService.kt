@@ -4,6 +4,7 @@ import com.softfocus.core.networking.ApiConstants
 import com.softfocus.features.therapy.data.models.request.ConnectWithPsychologistRequestDto
 import com.softfocus.features.therapy.data.models.request.SendChatMessageRequestDto
 import com.softfocus.features.therapy.data.models.response.ConnectResponseDto
+import com.softfocus.features.therapy.data.models.response.GetRelationshipWithPatientResponseDto
 import com.softfocus.features.therapy.data.models.response.MyRelationshipResponseDto
 import com.softfocus.features.therapy.data.models.response.PatientDirectoryResponseDto
 import com.softfocus.features.therapy.data.models.response.PatientProfileResponseDto
@@ -24,6 +25,12 @@ interface TherapyService {
     suspend fun getMyRelationship(
         @Header("Authorization") token: String
     ): MyRelationshipResponseDto
+
+    @GET(ApiConstants.Therapy.GET_PATIENT_RELATIONSHIP)
+    suspend fun getRelationshipWithPatient(
+        @Header("Authorization") token: String,
+        @Path("patientId") patientId: String
+    ): GetRelationshipWithPatientResponseDto
 
     @POST(ApiConstants.Therapy.CONNECT)
     suspend fun connectWithPsychologist(

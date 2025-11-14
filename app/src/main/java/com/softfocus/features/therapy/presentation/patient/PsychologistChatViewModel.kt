@@ -1,13 +1,19 @@
-package com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs
+package com.softfocus.features.therapy.presentation.patient
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.softfocus.core.data.local.LocalUserDataSource
 import com.softfocus.core.data.local.UserSession
+import com.softfocus.features.profile.domain.models.AssignedPsychologist
+import com.softfocus.features.profile.domain.repositories.ProfileRepository
+import com.softfocus.features.profile.presentation.PsychologistLoadState
+import com.softfocus.features.search.domain.repositories.SearchRepository
 import com.softfocus.features.therapy.data.remote.SignalRService
 import com.softfocus.features.therapy.domain.models.ChatMessage
+import com.softfocus.features.therapy.domain.repositories.TherapyRepository
 import com.softfocus.features.therapy.domain.usecases.GetChatHistoryUseCase
-import com.softfocus.features.therapy.domain.usecases.GetPatientProfileUseCase
+import com.softfocus.features.therapy.domain.usecases.GetMyRelationshipUseCase
 import com.softfocus.features.therapy.domain.usecases.GetRelationshipWithPatientUseCase
 import com.softfocus.features.therapy.domain.usecases.SendChatMessageUseCase
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.PatientSummaryState
@@ -22,8 +28,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// 1. ESTADO DE LA UI
-data class PatientChatUiState(
+data class PsychologistChatUiState(
     val isLoading: Boolean = true,
     val patientName: String = "",
     val patientProfileUrl: String? = null,
@@ -31,36 +36,36 @@ data class PatientChatUiState(
     val error: String? = null
 )
 
-data class PatientSummaryState(
+data class PsychologistSummaryState(
     val isLoading: Boolean = true,
-    val patientName: String = "Cargando...", // Valor inicial
-    val profilePhotoUrl: String = "",
-    val error: String? = null
+    val psychologistName: String = "Cargando...",
+    val profilePhotoUrl: String = ""
 )
 
-// 2. VIEWMODEL
-class PatientChatViewModel(
-    savedStateHandle: SavedStateHandle,
-    private val getPatientProfileUseCase: GetPatientProfileUseCase,
-    private val getRelationshipWithPatientUseCase: GetRelationshipWithPatientUseCase,
+class PsychologistChatViewModel(
+    private val userSession: UserSession,
+    private val getMyRelationshipUseCase: GetMyRelationshipUseCase,
     private val getChatHistoryUseCase: GetChatHistoryUseCase,
     private val sendChatMessageUseCase: SendChatMessageUseCase,
     private val signalRService: SignalRService,
-    private val userSession: UserSession
-) : ViewModel() {
+    private val searchRepository: SearchRepository
+): ViewModel() {
 
-    private val _uiState = MutableStateFlow(PatientChatUiState())
-    val uiState: StateFlow<PatientChatUiState> = _uiState.asStateFlow()
+    private val _assignedPsychologist = MutableStateFlow<AssignedPsychologist?>(null)
+    val assignedPsychologist: StateFlow<AssignedPsychologist?> = _assignedPsychologist.asStateFlow()
 
-    private val _summaryState = MutableStateFlow(PatientSummaryState())
-    val summaryState: StateFlow<PatientSummaryState> = _summaryState.asStateFlow()
+    private val _psychologistLoadState = MutableStateFlow<PsychologistLoadState>(PsychologistLoadState.Loading)
+    val psychologistLoadState: StateFlow<PsychologistLoadState> = _psychologistLoadState.asStateFlow()
 
-    // Argumentos de navegación
-    private val patientId: String = checkNotNull(savedStateHandle["patientId"])
-    private val patientName: String = checkNotNull(savedStateHandle["patientName"])
-    private val patientProfileUrl: String? = savedStateHandle["profilePhotoUrl"]
+    private val _uiState = MutableStateFlow(PsychologistChatUiState())
+    val uiState: StateFlow<PsychologistChatUiState> = _uiState.asStateFlow()
+
+    private val _summaryState = MutableStateFlow(PsychologistSummaryState())
+    val summaryState: StateFlow<PsychologistSummaryState> = _summaryState.asStateFlow()
 
     // IDs
+
+    private var patientId: String? = null
     private var psychologistId: String? = null
     private var relationshipId: String? = null
 
@@ -68,18 +73,12 @@ class PatientChatViewModel(
     private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale("es", "ES"))
 
     init {
-        _uiState.update {
-            it.copy(
-                patientName = this.patientName,
-                patientProfileUrl = this.patientProfileUrl
-            )
-        }
-        psychologistId = userSession.getUser()?.id
 
-        if (psychologistId == null) {
-            _uiState.update { it.copy(isLoading = false, error = "Error: No se pudo obtener el ID del psicólogo.") }
+        patientId = userSession.getUser()?.id
+
+        if (patientId == null) {
+            _uiState.update { it.copy(isLoading = false, error = "Error: No se pudo obtener el ID del paciente.") }
         } else {
-            loadPatientDetails()
             initializeChat()
         }
     }
@@ -88,11 +87,12 @@ class PatientChatViewModel(
         viewModelScope.launch(Dispatchers.IO) { // Usar IO para operaciones de red
             try {
                 // 1. Obtener el RelationshipId
-                val relationshipResult = getRelationshipWithPatientUseCase(patientId)
-                if (relationshipResult.isFailure) {
-                    throw Exception(relationshipResult.exceptionOrNull()?.message ?: "Error al obtener ID de relación")
-                }
-                relationshipId = relationshipResult.getOrThrow()
+                val relationshipResult = getMyRelationshipUseCase()
+                val relationship = relationshipResult.getOrThrow()
+                relationshipId = relationship?.id
+                psychologistId = relationship?.psychologistId
+
+                loadPsychologistDetails("$psychologistId")
 
                 // 2. Configurar SignalR
                 signalRService.initConnection()
@@ -118,39 +118,24 @@ class PatientChatViewModel(
         }
     }
 
-    private fun loadPatientDetails() {
-        // Nos aseguramos de tener un patientId
-        if (patientId.isBlank()) {
-            _summaryState.update { it.copy(isLoading = false, error = "ID de paciente inválido") }
-            return
-        }
+    private fun loadPsychologistDetails(psychologistId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // Llama al repositorio para obtener los detalles
+            val result = searchRepository.getPsychologistById(psychologistId)
 
-        viewModelScope.launch {
-            // Ponemos el estado en "cargando"
-            _summaryState.update { it.copy(isLoading = true) }
-
-            // Llamamos al nuevo endpoint a través del Caso de Uso
-            val profileResult = getPatientProfileUseCase(patientId)
-
-            profileResult.onSuccess { profile ->
-                // Éxito: Actualizamos el estado con los datos del perfil
-                _summaryState.update {
-                    it.copy(
-                        isLoading = false,
-                        patientName = profile.fullName,
-                        profilePhotoUrl = profile.profilePhotoUrl,
-                        error = null
-                    )
+            result.onSuccess { psychologist ->
+                // Actualiza el state con la información completa
+                withContext(Dispatchers.Main) {
+                    _summaryState.update {
+                        it.copy(
+                            psychologistName = psychologist.fullName,
+                            profilePhotoUrl = "${psychologist.profileImageUrl}"
+                        )
+                    }
                 }
-            }.onFailure { error ->
-                // Error: Mostramos un mensaje
-                _summaryState.update {
-                    it.copy(
-                        isLoading = false,
-                        patientName = "Error",
-                        error = error.message
-                    )
-                }
+            }.onFailure {
+                // Opcional: manejar el error.
+                // No es crítico porque ya tenemos el nombre básico de la relación.
             }
         }
     }
@@ -159,11 +144,9 @@ class PatientChatViewModel(
 
         viewModelScope.launch {
 
-            val relationshipResult = getRelationshipWithPatientUseCase(patientId)
-            if (relationshipResult.isFailure) {
-                throw Exception(relationshipResult.exceptionOrNull()?.message ?: "Error al obtener ID de relación")
-            }
-            relationshipId = relationshipResult.getOrThrow()
+            val relationshipResult = getMyRelationshipUseCase()
+            val relationship = relationshipResult.getOrThrow()
+            relationshipId = relationship?.id
 
             _uiState.update { it.copy(isLoading = true) }
 
@@ -180,19 +163,18 @@ class PatientChatViewModel(
     fun sendMessage(content: String) {
 
         viewModelScope.launch(Dispatchers.IO) {
-            val relationshipResult = getRelationshipWithPatientUseCase(patientId)
-            if (relationshipResult.isFailure) {
-                throw Exception(relationshipResult.exceptionOrNull()?.message ?: "Error al obtener ID de relación")
-            }
-            relationshipId = relationshipResult.getOrThrow()
-            val psyId = userSession.getUser()?.id
+            val relationshipResult = getMyRelationshipUseCase()
+            val relationship = relationshipResult.getOrThrow()
+            relationshipId = relationship?.id
+            patientId = userSession.getUser()?.id
+            psychologistId = relationship?.psychologistId
 
             // 1. Crear mensaje local y añadirlo a la UI (Actualización optimista)
             val localMessage = ChatMessage(
                 id = System.currentTimeMillis().toString(), // ID temporal
                 relationshipId = "$relationshipId",
-                senderId = "$psyId",
-                receiverId = patientId,
+                senderId = "$patientId",
+                receiverId = "$psychologistId",
                 content = content,
                 timestamp = ZonedDateTime.now().toString(),
                 isFromMe = true,
@@ -200,15 +182,13 @@ class PatientChatViewModel(
             )
             _uiState.update { it.copy(messages = listOf(localMessage) + it.messages) }
 
-            sendChatMessageUseCase("$relationshipId", patientId, content, "text")
+            sendChatMessageUseCase("$relationshipId", "$psychologistId", content, "text")
                 .onFailure { error ->
                     // Opcional: Marcar el mensaje local como "fallido" en la UI
                     withContext(Dispatchers.Main) {
                         _uiState.update { it.copy(error = "Error al enviar: ${error.message}") }
                     }
                 }
-            // No necesitamos .onSuccess porque el psicólogo no recibe su propio
-            // mensaje por SignalR. La actualización optimista es suficiente.
         }
     }
 

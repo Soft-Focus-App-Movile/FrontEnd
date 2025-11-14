@@ -47,6 +47,18 @@ class TherapyRepositoryImpl(
         }
     }
 
+    override suspend fun getRelationshipWithPatient(patientId: String): Result<String> {
+        return try {
+            val response = therapyService.getRelationshipWithPatient(
+                token = getAuthToken(),
+                patientId = patientId
+            )
+            Result.success(response.relationshipId)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun connectWithPsychologist(connectionCode: String): Result<String> {
         return try {
             val request = ConnectWithPsychologistRequestDto(connectionCode)

@@ -55,6 +55,8 @@ object ApiConstants {
     // Therapy endpoints
     object Therapy {
         const val MY_RELATIONSHIP = "therapy/my-relationship"
+
+        const val GET_PATIENT_RELATIONSHIP = "therapy/relationship-with/{patientId}"
         const val CONNECT = "therapy/connect"
         const val PATIENTS = "therapy/patients"
         const val DISCONNECT = "therapy/disconnect/{relationshipId}"

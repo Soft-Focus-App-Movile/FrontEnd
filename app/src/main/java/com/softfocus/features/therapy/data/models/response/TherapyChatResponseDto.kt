@@ -9,13 +9,15 @@ data class TherapyChatResponseDto(
     @SerializedName("id")
     val id: String,
 
-    @SerializedName("relationship_id")
+    @SerializedName("relationshipId") // Antes: "relationship_id"
     val relationshipId: String,
 
-    @SerializedName("sender_id")
+    // --- CAMBIO AQUÍ ---
+    @SerializedName("senderId") // Antes: "sender_id"
     val senderId: String,
 
-    @SerializedName("receiver_id")
+    // --- CAMBIO AQUÍ ---
+    @SerializedName("receiverId") // Antes: "receiver_id"
     val receiverId: String,
 
     @SerializedName("content")
@@ -24,9 +26,9 @@ data class TherapyChatResponseDto(
     @SerializedName("timestamp")
     val timestamp: String,
 
-    @SerializedName("is_read")
+    @SerializedName("isRead")
     val isRead: Boolean,
 
-    @SerializedName("message_type")
+    @SerializedName("messageType")
     val messageType: String
 )
