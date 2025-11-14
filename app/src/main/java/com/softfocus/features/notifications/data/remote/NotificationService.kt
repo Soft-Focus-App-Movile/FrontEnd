@@ -15,18 +15,18 @@ interface NotificationService {
     suspend fun getNotifications(
         @Query("status") status: String? = null,
         @Query("type") type: String? = null,
-        @Query("page") page: Int = 1,  // ✅ Valor por defecto positivo
-        @Query("size") size: Int = 20  // ✅ Valor por defecto positivo
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 20
     ): Response<NotificationListResponseDto>
 
-    // ... mismo cambio para getNotificationsByUserId
+    //  mismo cambio para getNotificationsByUserId
     @GET("notifications/{userId}")
     suspend fun getNotificationsByUserId(
         @Path("userId") userId: String,
         @Query("status") status: String? = null,
         @Query("type") type: String? = null,
-        @Query("page") page: Int = 1,  // ✅ Valor por defecto positivo
-        @Query("size") size: Int = 20  // ✅ Valor por defecto positivo
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 20
     ): Response<NotificationListResponseDto>
 
     // GET /api/v1/notifications/{userId} - Obtener notificaciones de usuario específico
