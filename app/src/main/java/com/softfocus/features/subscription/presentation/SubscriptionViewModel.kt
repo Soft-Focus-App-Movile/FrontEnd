@@ -154,13 +154,29 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
             _isLoading.value = true
             _errorMessage.value = null
 
+            android.util.Log.d("SubscriptionViewModel", "Processing checkout success with sessionId: $sessionId")
+
             handleCheckoutSuccessUseCase(sessionId)
                 .onSuccess { updatedSubscription ->
+                    android.util.Log.d("SubscriptionViewModel", "Payment processed successfully. New plan: ${updatedSubscription.plan}, Status: ${updatedSubscription.status}")
+
+                    // Update UI state with new subscription
                     _uiState.value = SubscriptionUiState.Success(updatedSubscription)
+
+                    // Close WebView
                     _checkoutUrl.value = null
+
+                    // Show success message
+                    _errorMessage.value = "¡Pago exitoso! Ahora tienes el Plan Pro"
+
+                    android.util.Log.d("SubscriptionViewModel", "Subscription updated successfully to: ${updatedSubscription.plan}")
                 }
                 .onFailure { error ->
+                    android.util.Log.e("SubscriptionViewModel", "Error processing payment: ${error.message}", error)
                     _errorMessage.value = error.message ?: "Error al procesar pago"
+
+                    // Close WebView even on error so user isn't stuck
+                    _checkoutUrl.value = null
                 }
 
             _isLoading.value = false

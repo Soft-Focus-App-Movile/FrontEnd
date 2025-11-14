@@ -37,14 +37,17 @@ fun MyPlanScreen(
         StripeCheckoutWebView(
             checkoutUrl = checkoutUrl!!,
             onSuccess = { sessionId ->
+                android.util.Log.d("MyPlanScreen", "Payment success! SessionId: $sessionId")
                 showWebView = false
                 viewModel.handleCheckoutSuccess(sessionId)
             },
             onCancel = {
+                android.util.Log.d("MyPlanScreen", "Payment cancelled by user")
                 showWebView = false
                 viewModel.clearCheckoutUrl()
             },
             onDismiss = {
+                android.util.Log.d("MyPlanScreen", "WebView dismissed")
                 showWebView = false
                 viewModel.clearCheckoutUrl()
             }
@@ -55,6 +58,10 @@ fun MyPlanScreen(
     LaunchedEffect(checkoutUrl) {
         if (checkoutUrl != null) {
             showWebView = true
+        } else if (showWebView) {
+            // WebView was closed, ensure we have the latest subscription data
+            android.util.Log.d("MyPlanScreen", "WebView closed, refreshing subscription data")
+            showWebView = false
         }
     }
 
@@ -274,7 +281,7 @@ private fun PlanFeatureItem(text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.Top
     ) {
         Text(
@@ -289,6 +296,9 @@ private fun PlanFeatureItem(text: String) {
             style = SourceSansRegular,
             fontSize = 16.sp,
             color = White,
+            lineHeight = 20.sp,
+            softWrap = true,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Visible,
             modifier = Modifier.weight(1f)
         )
     }

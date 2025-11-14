@@ -69,16 +69,24 @@ fun StripeCheckoutWebView(
                             ): Boolean {
                                 val url = request?.url?.toString() ?: return false
 
+                                android.util.Log.d("StripeCheckoutWebView", "URL intercepted: $url")
+
                                 when {
                                     url.startsWith("softfocus://subscription/success") -> {
                                         val sessionId = android.net.Uri.parse(url)
                                             .getQueryParameter("session_id")
+
+                                        android.util.Log.d("StripeCheckoutWebView", "Payment success detected! SessionId: $sessionId")
+
                                         if (sessionId != null) {
                                             onSuccess(sessionId)
+                                        } else {
+                                            android.util.Log.e("StripeCheckoutWebView", "Success URL detected but no session_id found!")
                                         }
                                         return true
                                     }
                                     url.startsWith("softfocus://subscription/cancel") -> {
+                                        android.util.Log.d("StripeCheckoutWebView", "Payment cancellation detected")
                                         onCancel()
                                         return true
                                     }
