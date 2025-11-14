@@ -3,6 +3,8 @@ package com.softfocus.features.library.presentation.general.browse.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,13 +15,17 @@ import com.softfocus.features.library.domain.models.EmotionalTag
 import com.softfocus.features.library.presentation.shared.EmotionChip
 import com.softfocus.ui.theme.CrimsonBold
 import com.softfocus.ui.theme.Green29
+import com.softfocus.ui.theme.Green49
 import com.softfocus.ui.theme.SourceSansSemiBold
+import com.softfocus.ui.theme.SourceSansRegular
 
 /**
- * Bottom sheet para filtrar por emoción
+ * Bottom sheet para filtrar por emoción o favoritos
  *
  * @param selectedEmotion Emoción actualmente seleccionada
+ * @param showFavorites Si está mostrando favoritos
  * @param onEmotionSelected Callback cuando se selecciona una emoción
+ * @param onFavoritesSelected Callback cuando se selecciona favoritos
  * @param onDismiss Callback para cerrar el bottom sheet
  * @param modifier Modificador opcional
  */
@@ -27,7 +33,9 @@ import com.softfocus.ui.theme.SourceSansSemiBold
 @Composable
 fun FilterBottomSheet(
     selectedEmotion: EmotionalTag?,
+    showFavorites: Boolean = false,
     onEmotionSelected: (EmotionalTag?) -> Unit,
+    onFavoritesSelected: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -43,32 +51,83 @@ fun FilterBottomSheet(
         ) {
             // Título
             Text(
-                text = "Filtrar por emoción",
+                text = "Filtrar contenido",
                 style = CrimsonBold.copy(fontSize = 20.sp),
                 color = Green29,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Chips de emociones
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                items(EmotionalTag.values()) { emotion ->
-                    EmotionChip(
-                        emotion = emotion,
-                        selected = selectedEmotion == emotion,
-                        onClick = {
-                            onEmotionSelected(
-                                if (selectedEmotion == emotion) null else emotion
-                            )
-                        }
+            // Opción de Favoritos
+            Text(
+                text = "Favoritos",
+                style = SourceSansSemiBold.copy(fontSize = 14.sp),
+                color = Green29,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            FilterChip(
+                selected = showFavorites,
+                onClick = onFavoritesSelected,
+                label = {
+                    Text(
+                        text = "Mis Favoritos",
+                        style = SourceSansRegular.copy(fontSize = 14.sp)
                     )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = "Favoritos",
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Green49,
+                    selectedLabelColor = Color.White,
+                    selectedLeadingIconColor = Color.White,
+                    containerColor = Color.White,
+                    labelColor = Green29,
+                    iconColor = Green29
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = showFavorites,
+                    borderColor = Green29,
+                    selectedBorderColor = Green49
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Chips de emociones (solo si no está en favoritos)
+            if (!showFavorites) {
+                Text(
+                    text = "Emociones",
+                    style = SourceSansSemiBold.copy(fontSize = 14.sp),
+                    color = Green29,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(EmotionalTag.values()) { emotion ->
+                        EmotionChip(
+                            emotion = emotion,
+                            selected = selectedEmotion == emotion,
+                            onClick = {
+                                onEmotionSelected(
+                                    if (selectedEmotion == emotion) null else emotion
+                                )
+                            }
+                        )
+                    }
                 }
             }
 
             // Botón para limpiar filtros
-            if (selectedEmotion != null) {
+            if (selectedEmotion != null || showFavorites) {
                 TextButton(
                     onClick = {
                         onEmotionSelected(null)
@@ -76,7 +135,7 @@ fun FilterBottomSheet(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Limpiar filtro",
+                        text = "Limpiar filtros",
                         style = SourceSansSemiBold,
                         color = Green29
                     )

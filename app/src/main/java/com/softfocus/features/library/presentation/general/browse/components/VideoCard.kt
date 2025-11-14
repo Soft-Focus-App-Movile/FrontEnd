@@ -8,14 +8,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,10 +31,8 @@ import com.softfocus.ui.theme.*
  * Card específico para videos con botón "Ver" que abre YouTube
  *
  * @param content Item de contenido de video
- * @param isFavorite Si el contenido está marcado como favorito
  * @param isSelected Si el contenido está seleccionado (modo psicólogo)
  * @param isSelectionMode Si está en modo selección (mostrar overlay)
- * @param onFavoriteClick Callback al hacer clic en el botón de favorito
  * @param onViewClick Callback al hacer clic en el botón "Ver"
  * @param onClick Callback al hacer clic en el card (para selección)
  * @param onLongClick Callback al mantener presionado el card
@@ -47,10 +42,8 @@ import com.softfocus.ui.theme.*
 @Composable
 fun VideoCard(
     content: ContentItem,
-    isFavorite: Boolean = false,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
-    onFavoriteClick: () -> Unit = {},
     onViewClick: () -> Unit = {},
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
@@ -107,24 +100,6 @@ fun VideoCard(
                             contentDescription = "Seleccionado",
                             tint = Green49,
                             modifier = Modifier.size(36.dp)
-                        )
-                    }
-                }
-
-                // Botón de favorito en esquina superior derecha del thumbnail (solo si NO está en modo selección)
-                if (!isSelectionMode) {
-                    IconButton(
-                        onClick = onFavoriteClick,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(28.dp)
-                            .padding(2.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
-                            tint = if (isFavorite) Green49 else Color.White,
-                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }

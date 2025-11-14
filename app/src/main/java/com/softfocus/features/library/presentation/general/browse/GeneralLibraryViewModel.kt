@@ -38,10 +38,21 @@ class GeneralLibraryViewModel(
     private val _selectedVideoCategory = MutableStateFlow<VideoCategory?>(null)
     val selectedVideoCategory: StateFlow<VideoCategory?> = _selectedVideoCategory.asStateFlow()
 
+    // Filtro de favoritos independiente por tipo de contenido
+    private val _showFavoritesByType = MutableStateFlow(
+        mapOf(
+            ContentType.Movie to false,
+            ContentType.Music to false,
+            ContentType.Video to false
+        )
+    )
+    val showFavoritesByType: StateFlow<Map<ContentType, Boolean>> = _showFavoritesByType.asStateFlow()
+
     private val _favoriteIds = MutableStateFlow<Set<String>>(emptySet())
     val favoriteIds: StateFlow<Set<String>> = _favoriteIds.asStateFlow()
 
-    private val _favoritesMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    private val _favoriteIdMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    val favoriteIdMap: StateFlow<Map<String, String>> = _favoriteIdMap.asStateFlow()
 
     private val _selectedContentIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedContentIds: StateFlow<Set<String>> = _selectedContentIds.asStateFlow()
@@ -119,6 +130,14 @@ class GeneralLibraryViewModel(
     private fun loadAllContent() {
         viewModelScope.launch {
             Log.d(TAG, "loadAllContent: Iniciando carga de contenido")
+
+            val currentState = _uiState.value
+            val previousWeather = if (currentState is GeneralLibraryUiState.Success) {
+                currentState.weatherCondition
+            } else {
+                null
+            }
+
             _uiState.value = GeneralLibraryUiState.Loading
 
             try {
@@ -127,7 +146,6 @@ class GeneralLibraryViewModel(
 
                 for (type in ContentType.values()) {
                     if (type == ContentType.Weather) {
-                        // Weather se carga por separado cuando el usuario selecciona el tab
                         contentMap[type] = emptyList()
                         continue
                     }
@@ -147,7 +165,6 @@ class GeneralLibraryViewModel(
                     }
                 }
 
-                // Log del resultado final
                 val totalItems = contentMap.values.sumOf { it.size }
                 Log.d(TAG, "loadAllContent: Total items cargados: $totalItems")
                 Log.d(TAG, "loadAllContent: ContentMap keys: ${contentMap.keys}")
@@ -155,17 +172,17 @@ class GeneralLibraryViewModel(
                     Log.d(TAG, "loadAllContent:   $type -> ${items.size} items")
                 }
 
-                // Si todas las llamadas fallaron, mostrar error
                 if (contentMap.isEmpty() && errors.isNotEmpty()) {
                     Log.w(TAG, "loadAllContent: Todas las llamadas fallaron")
                     _uiState.value = GeneralLibraryUiState.Error(
                         "Error al cargar contenido:\n${errors.joinToString("\n")}"
                     )
                 } else {
-                    Log.d(TAG, "loadAllContent: Estableciendo estado Success")
+                    Log.d(TAG, "loadAllContent: Estableciendo estado Success, preservando weather: ${previousWeather != null}")
                     _uiState.value = GeneralLibraryUiState.Success(
                         contentByType = contentMap,
-                        selectedType = _selectedType.value
+                        selectedType = _selectedType.value,
+                        weatherCondition = previousWeather
                     )
                 }
             } catch (e: Exception) {
@@ -179,52 +196,44 @@ class GeneralLibraryViewModel(
 
     fun loadContentByEmotion(emotion: EmotionalTag) {
         viewModelScope.launch {
-            Log.d(TAG, "loadContentByEmotion: Iniciando carga para emoción $emotion")
+            val currentType = _selectedType.value
+            Log.d(TAG, "loadContentByEmotion: Iniciando carga para emoción $emotion en tipo $currentType")
             _selectedEmotion.value = emotion
             _uiState.value = GeneralLibraryUiState.Loading
 
             try {
-                val contentMap = mutableMapOf<ContentType, List<ContentItem>>()
-                val errors = mutableListOf<String>()
-
-                for (type in ContentType.values()) {
-                    if (type == ContentType.Weather) {
-                        // Weather se carga por separado cuando el usuario selecciona el tab
-                        contentMap[type] = emptyList()
-                        continue
-                    }
-                    Log.d(TAG, "loadContentByEmotion: Cargando $type con emoción $emotion")
-
-                    val result = repository.getRecommendedByEmotion(
-                        emotion = emotion,
-                        contentType = type,
-                        limit = 20
-                    )
-
-                    result.onSuccess { content ->
-                        Log.d(TAG, "loadContentByEmotion: ✅ $type - Recibidos ${content.size} items")
-                        contentMap[type] = content
-                    }.onFailure { error ->
-                        Log.e(TAG, "loadContentByEmotion: ❌ $type - Error: ${error.message}", error)
-                        errors.add("${type.name}: ${error.message}")
-                    }
+                val currentState = _uiState.value
+                val existingContent = if (currentState is GeneralLibraryUiState.Success) {
+                    currentState.contentByType
+                } else {
+                    emptyMap()
                 }
 
-                // Log del resultado final
-                val totalItems = contentMap.values.sumOf { it.size }
-                Log.d(TAG, "loadContentByEmotion: Total items cargados: $totalItems")
+                val contentMap = existingContent.toMutableMap()
 
-                // Si todas las llamadas fallaron, mostrar error
-                if (contentMap.isEmpty() && errors.isNotEmpty()) {
-                    Log.w(TAG, "loadContentByEmotion: Todas las llamadas fallaron")
-                    _uiState.value = GeneralLibraryUiState.Error(
-                        "Error al cargar contenido por emoción:\n${errors.joinToString("\n")}"
-                    )
-                } else {
-                    Log.d(TAG, "loadContentByEmotion: Estableciendo estado Success")
+                if (currentType == ContentType.Weather) {
+                    Log.w(TAG, "loadContentByEmotion: Weather no soporta filtro de emoción")
+                    return@launch
+                }
+
+                val result = repository.getRecommendedByEmotion(
+                    emotion = emotion,
+                    contentType = currentType,
+                    limit = 20
+                )
+
+                result.onSuccess { content ->
+                    Log.d(TAG, "loadContentByEmotion: ✅ $currentType - Recibidos ${content.size} items")
+                    contentMap[currentType] = content
+
                     _uiState.value = GeneralLibraryUiState.Success(
                         contentByType = contentMap,
-                        selectedType = _selectedType.value
+                        selectedType = currentType
+                    )
+                }.onFailure { error ->
+                    Log.e(TAG, "loadContentByEmotion: ❌ $currentType - Error: ${error.message}", error)
+                    _uiState.value = GeneralLibraryUiState.Error(
+                        error.message ?: "Error al cargar contenido por emoción"
                     )
                 }
             } catch (e: Exception) {
@@ -238,7 +247,87 @@ class GeneralLibraryViewModel(
 
     fun clearEmotionFilter() {
         _selectedEmotion.value = null
+        val currentType = _selectedType.value
+        _showFavoritesByType.value = _showFavoritesByType.value.toMutableMap().apply {
+            put(currentType, false)
+        }
+        if (currentType == ContentType.Video) {
+            _selectedVideoCategory.value = null
+        }
         loadAllContent()
+    }
+
+    fun loadFavoriteContent() {
+        viewModelScope.launch {
+            val currentType = _selectedType.value
+            Log.d(TAG, "loadFavoriteContent: Cargando favoritos para $currentType")
+
+            // Activar favoritos solo para el tipo actual
+            _showFavoritesByType.value = _showFavoritesByType.value.toMutableMap().apply {
+                put(currentType, true)
+            }
+            _selectedEmotion.value = null
+            _uiState.value = GeneralLibraryUiState.Loading
+
+            try {
+                repository.getFavorites().onSuccess { favorites ->
+                    Log.d(TAG, "loadFavoriteContent: ✅ ${favorites.size} favoritos cargados")
+
+                    val allFavoritesMap = favorites
+                        .map { it.content }
+                        .groupBy { it.type }
+
+                    val currentState = _uiState.value
+                    val existingContent = if (currentState is GeneralLibraryUiState.Success) {
+                        currentState.contentByType
+                    } else {
+                        emptyMap()
+                    }
+
+                    val updatedContentMap = existingContent.toMutableMap()
+
+                    updatedContentMap[currentType] = allFavoritesMap[currentType] ?: emptyList()
+
+                    val totalItems = updatedContentMap[currentType]?.size ?: 0
+                    Log.d(TAG, "loadFavoriteContent: Total items de $currentType: $totalItems")
+
+                    _uiState.value = GeneralLibraryUiState.Success(
+                        contentByType = updatedContentMap,
+                        selectedType = currentType,
+                        showFavorites = _showFavoritesByType.value[currentType] ?: false
+                    )
+                }.onFailure { error ->
+                    Log.e(TAG, "loadFavoriteContent: ❌ Error: ${error.message}", error)
+                    _uiState.value = GeneralLibraryUiState.Error(
+                        error.message ?: "Error al cargar favoritos"
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "loadFavoriteContent: ❌ Excepción: ${e.message}", e)
+                _uiState.value = GeneralLibraryUiState.Error(
+                    e.message ?: "Error al cargar favoritos"
+                )
+            }
+        }
+    }
+
+    fun clearFavoritesFilter() {
+        val currentType = _selectedType.value
+        Log.d(TAG, "clearFavoritesFilter: Limpiando filtro de favoritos para $currentType")
+
+        _showFavoritesByType.value = _showFavoritesByType.value.toMutableMap().apply {
+            put(currentType, false)
+        }
+
+        if (currentType == ContentType.Video) {
+            _selectedVideoCategory.value = null
+        }
+
+        if (_selectedEmotion.value != null) {
+            loadContentByEmotion(_selectedEmotion.value!!)
+        } else {
+            loadAllContent()
+        }
     }
 
     fun loadContentByVideoCategory(category: VideoCategory) {
@@ -255,9 +344,20 @@ class GeneralLibraryViewModel(
                     limit = 20
                 ).onSuccess { videos ->
                     Log.d(TAG, "loadContentByVideoCategory: ✅ Encontrados ${videos.size} videos")
-                    val contentMap = mapOf(ContentType.Video to videos)
+
+                    val currentState = _uiState.value
+                    val existingContent = if (currentState is GeneralLibraryUiState.Success) {
+                        currentState.contentByType
+                    } else {
+                        emptyMap()
+                    }
+
+                    val updatedContentMap = existingContent.toMutableMap().apply {
+                        put(ContentType.Video, videos)
+                    }
+
                     _uiState.value = GeneralLibraryUiState.Success(
-                        contentByType = contentMap,
+                        contentByType = updatedContentMap,
                         selectedType = ContentType.Video
                     )
                 }.onFailure { error ->
@@ -278,6 +378,9 @@ class GeneralLibraryViewModel(
     fun searchContent(query: String) {
         if (query.isBlank()) {
             Log.d(TAG, "searchContent: Query vacío, recargando contenido")
+            if (_selectedType.value == ContentType.Video) {
+                _selectedVideoCategory.value = null
+            }
             if (_selectedEmotion.value != null) {
                 loadContentByEmotion(_selectedEmotion.value!!)
             } else {
@@ -290,6 +393,10 @@ class GeneralLibraryViewModel(
             Log.d(TAG, "searchContent: Buscando '$query' en tipo ${_selectedType.value}")
             _uiState.value = GeneralLibraryUiState.Loading
 
+            if (_selectedType.value == ContentType.Video) {
+                _selectedVideoCategory.value = null
+            }
+
             try {
                 repository.searchContent(
                     query = query,
@@ -298,9 +405,20 @@ class GeneralLibraryViewModel(
                     limit = 20
                 ).onSuccess { results ->
                     Log.d(TAG, "searchContent: ✅ Encontrados ${results.size} resultados")
-                    val contentMap = mapOf(_selectedType.value to results)
+
+                    val currentState = _uiState.value
+                    val existingContent = if (currentState is GeneralLibraryUiState.Success) {
+                        currentState.contentByType
+                    } else {
+                        emptyMap()
+                    }
+
+                    val updatedContentMap = existingContent.toMutableMap().apply {
+                        put(_selectedType.value, results)
+                    }
+
                     _uiState.value = GeneralLibraryUiState.Success(
-                        contentByType = contentMap,
+                        contentByType = updatedContentMap,
                         selectedType = _selectedType.value
                     )
                 }.onFailure { error ->
@@ -319,15 +437,57 @@ class GeneralLibraryViewModel(
     }
 
     fun selectContentType(type: ContentType) {
+        Log.d(TAG, "selectContentType: Cambiando a $type")
         _selectedType.value = type
+
+        if (type != ContentType.Video) {
+            _selectedVideoCategory.value = null
+        }
+
         val currentState = _uiState.value
+        val isNewTypeFavoritesActive = _showFavoritesByType.value[type] ?: false
+
+        Log.d(TAG, "selectContentType: Favoritos activos para $type = $isNewTypeFavoritesActive")
+
         if (currentState is GeneralLibraryUiState.Success) {
-            _uiState.value = currentState.copy(selectedType = type)
+            _uiState.value = currentState.copy(
+                selectedType = type,
+                showFavorites = isNewTypeFavoritesActive
+            )
+
+            val hasContent = !currentState.contentByType[type].isNullOrEmpty()
+
+            if (type == ContentType.Weather) {
+                Log.d(TAG, "selectContentType: Weather se carga con loadWeather(), no con loadAllContent()")
+            } else if (isNewTypeFavoritesActive && !hasContent) {
+                Log.d(TAG, "selectContentType: Cargando favoritos para $type")
+                loadFavoriteContent()
+            } else if (!isNewTypeFavoritesActive && !hasContent) {
+                Log.d(TAG, "selectContentType: Tipo $type vacío, cargando contenido normal")
+                if (_selectedEmotion.value != null) {
+                    loadContentByEmotion(_selectedEmotion.value!!)
+                } else {
+                    loadAllContent()
+                }
+            }
         } else {
-            if (_selectedEmotion.value != null) {
-                loadContentByEmotion(_selectedEmotion.value!!)
+            if (type == ContentType.Weather) {
+                Log.d(TAG, "selectContentType: Weather se carga con loadWeather(), esperando LaunchedEffect")
             } else {
-                loadAllContent()
+                when {
+                    isNewTypeFavoritesActive -> {
+                        Log.d(TAG, "selectContentType: Cargando favoritos de $type")
+                        loadFavoriteContent()
+                    }
+                    _selectedEmotion.value != null -> {
+                        Log.d(TAG, "selectContentType: Cargando por emoción")
+                        loadContentByEmotion(_selectedEmotion.value!!)
+                    }
+                    else -> {
+                        Log.d(TAG, "selectContentType: Cargando todo el contenido")
+                        loadAllContent()
+                    }
+                }
             }
         }
     }
@@ -336,7 +496,8 @@ class GeneralLibraryViewModel(
         viewModelScope.launch {
             repository.getFavorites().onSuccess { favorites ->
                 _favoriteIds.value = favorites.map { it.content.externalId }.toSet()
-                _favoritesMap.value = favorites.associate { it.content.externalId to it.id }
+                _favoriteIdMap.value = favorites.associate { it.content.externalId to it.id }
+                Log.d(TAG, "loadFavorites: ${favorites.size} favoritos cargados, map: ${_favoriteIdMap.value}")
             }
         }
     }
@@ -344,22 +505,50 @@ class GeneralLibraryViewModel(
     fun toggleFavorite(content: ContentItem) {
         viewModelScope.launch {
             val isFavorite = _favoriteIds.value.contains(content.externalId)
+            Log.d(TAG, "toggleFavorite: ${content.title} - isFavorite actual: $isFavorite")
 
             if (isFavorite) {
-                val favoriteId = _favoritesMap.value[content.externalId]
-                favoriteId?.let {
-                    repository.deleteFavorite(it).onSuccess {
-                        _favoriteIds.value = _favoriteIds.value - content.externalId
-                        _favoritesMap.value = _favoritesMap.value - content.externalId
-                    }
+                val favoriteId = _favoriteIdMap.value[content.externalId]
+                if (favoriteId == null) {
+                    Log.e(TAG, "toggleFavorite: ❌ No se encontró favoriteId para ${content.externalId}")
+                    return@launch
+                }
+
+                _favoriteIds.value = _favoriteIds.value - content.externalId
+                Log.d(TAG, "toggleFavorite: [OPTIMISTIC] Corazón desmarcado")
+                Log.d(TAG, "toggleFavorite: Removiendo favorito con favoriteId: $favoriteId")
+
+                repository.deleteFavorite(favoriteId).onSuccess {
+                    Log.d(TAG, "toggleFavorite: ✅ Favorito removido exitosamente del backend")
+                    _favoriteIdMap.value = _favoriteIdMap.value - content.externalId
+                    loadFavorites()
+                }.onFailure { error ->
+                    Log.e(TAG, "toggleFavorite: ❌ Error al remover favorito: ${error.message}", error)
+                    _favoriteIds.value = _favoriteIds.value + content.externalId
+                    Log.d(TAG, "toggleFavorite: [ROLLBACK] Corazón restaurado")
                 }
             } else {
+                _favoriteIds.value = _favoriteIds.value + content.externalId
+                Log.d(TAG, "toggleFavorite: [OPTIMISTIC] Corazón marcado")
+                Log.d(TAG, "toggleFavorite: Agregando a favoritos - contentId: ${content.externalId}, type: ${content.type}")
+
                 repository.addFavorite(
                     contentId = content.externalId,
                     contentType = content.type
                 ).onSuccess { favorite ->
-                    _favoriteIds.value = _favoriteIds.value + content.externalId
-                    _favoritesMap.value = _favoritesMap.value + (content.externalId to favorite.id)
+                    Log.d(TAG, "toggleFavorite: ✅ Favorito agregado exitosamente - favoriteId: ${favorite.id}")
+                    _favoriteIdMap.value = _favoriteIdMap.value + (content.externalId to favorite.id)
+                    loadFavorites()
+                }.onFailure { error ->
+                    Log.e(TAG, "toggleFavorite: ❌ Error al agregar favorito: ${error.message}", error)
+
+                    if (error.message?.contains("ya está en favoritos", ignoreCase = true) == true) {
+                        Log.d(TAG, "toggleFavorite: Ya estaba en favoritos, recargando para sincronizar...")
+                        loadFavorites()
+                    } else {
+                        _favoriteIds.value = _favoriteIds.value - content.externalId
+                        Log.d(TAG, "toggleFavorite: [ROLLBACK] Corazón desmarcado")
+                    }
                 }
             }
         }
@@ -379,15 +568,41 @@ class GeneralLibraryViewModel(
 
     fun loadWeather(latitude: Double, longitude: Double) {
         viewModelScope.launch {
+            Log.d(TAG, "loadWeather: Iniciando carga de clima para lat=$latitude, lon=$longitude")
+            _uiState.value = GeneralLibraryUiState.Loading
+
             try {
                 repository.getWeather(latitude, longitude).onSuccess { weather ->
+                    Log.d(TAG, "loadWeather: ✅ Clima cargado: ${weather.condition}")
+
                     val currentState = _uiState.value
-                    if (currentState is GeneralLibraryUiState.Success) {
-                        _uiState.value = currentState.copy(weatherCondition = weather)
+                    val existingContent = if (currentState is GeneralLibraryUiState.Success) {
+                        currentState.contentByType
+                    } else {
+                        emptyMap()
                     }
+
+                    val updatedContentMap = existingContent.toMutableMap()
+                    if (!updatedContentMap.containsKey(ContentType.Weather)) {
+                        updatedContentMap[ContentType.Weather] = emptyList()
+                    }
+
+                    _uiState.value = GeneralLibraryUiState.Success(
+                        contentByType = updatedContentMap,
+                        selectedType = ContentType.Weather,
+                        weatherCondition = weather
+                    )
+                }.onFailure { error ->
+                    Log.e(TAG, "loadWeather: ❌ Error: ${error.message}", error)
+                    _uiState.value = GeneralLibraryUiState.Error(
+                        error.message ?: "Error al cargar clima"
+                    )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "loadWeather: Error: ${e.message}", e)
+                Log.e(TAG, "loadWeather: ❌ Excepción: ${e.message}", e)
+                _uiState.value = GeneralLibraryUiState.Error(
+                    e.message ?: "Error al cargar clima"
+                )
             }
         }
     }
@@ -397,6 +612,39 @@ class GeneralLibraryViewModel(
             loadContentByEmotion(_selectedEmotion.value!!)
         } else {
             loadAllContent()
+        }
+    }
+
+    fun refreshContent(latitude: Double? = null, longitude: Double? = null) {
+        val currentType = _selectedType.value
+        Log.d(TAG, "refreshContent: Refrescando contenido de $currentType")
+
+        when (currentType) {
+            ContentType.Weather -> {
+                if (latitude != null && longitude != null) {
+                    loadWeather(latitude, longitude)
+                }
+            }
+            else -> {
+                val isShowingFavorites = _showFavoritesByType.value[currentType] ?: false
+                val hasEmotion = _selectedEmotion.value != null
+                val hasVideoCategory = currentType == ContentType.Video && _selectedVideoCategory.value != null
+
+                when {
+                    hasVideoCategory -> {
+                        _selectedVideoCategory.value?.let { loadContentByVideoCategory(it) }
+                    }
+                    isShowingFavorites -> {
+                        loadFavoriteContent()
+                    }
+                    hasEmotion -> {
+                        loadContentByEmotion(_selectedEmotion.value!!)
+                    }
+                    else -> {
+                        loadAllContent()
+                    }
+                }
+            }
         }
     }
 

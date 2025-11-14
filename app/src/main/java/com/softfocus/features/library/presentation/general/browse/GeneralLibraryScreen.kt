@@ -73,6 +73,7 @@ import com.softfocus.features.library.presentation.general.browse.components.Vid
 import com.softfocus.features.library.presentation.shared.getDisplayName
 import com.softfocus.ui.theme.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -104,6 +105,9 @@ fun GeneralLibraryScreen(
     val selectedType by viewModel.selectedType.collectAsState()
     val selectedEmotion by viewModel.selectedEmotion.collectAsState()
     val selectedVideoCategory by viewModel.selectedVideoCategory.collectAsState()
+    val showFavoritesByType by viewModel.showFavoritesByType.collectAsState()
+    // Obtener el estado de favoritos del tipo actual
+    val showFavorites = showFavoritesByType[selectedType] ?: false
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val selectedContentIds by viewModel.selectedContentIds.collectAsState()
     val patients by viewModel.patients.collectAsState()
@@ -115,8 +119,10 @@ fun GeneralLibraryScreen(
 
     val isPsychologist = userType == UserType.PSYCHOLOGIST
     val isSelectionMode = isPsychologist && selectedContentIds.isNotEmpty()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val hasTherapist = remember { mutableStateOf<Boolean?>(null) }
+    var currentLocation by remember { mutableStateOf<Pair<Double, Double>?>(null) }
 
     LaunchedEffect(Unit) {
         if (!isPsychologist) {
@@ -134,7 +140,7 @@ fun GeneralLibraryScreen(
     LaunchedEffect(selectedType) {
         if (selectedType == ContentType.Weather) {
             android.util.Log.d("GeneralLibraryScreen", "Tab Weather seleccionado, obteniendo ubicación...")
-            withContext(Dispatchers.IO) { // Mover la operación a un hilo de fondo
+            withContext(Dispatchers.IO) {
                 val location = try {
                     com.softfocus.core.utils.LocationHelper.getCurrentLocation(context)
                 } catch (e: Exception) {
@@ -143,6 +149,7 @@ fun GeneralLibraryScreen(
                 }
                 val latitude = location?.latitude ?: -12.0464
                 val longitude = location?.longitude ?: -77.0428
+                currentLocation = Pair(latitude, longitude)
                 android.util.Log.d("GeneralLibraryScreen", "Ubicación: lat=$latitude, lon=$longitude (${if (location != null) "GPS" else "default"})")
                 viewModel.loadWeather(latitude, longitude)
             }
@@ -175,6 +182,7 @@ fun GeneralLibraryScreen(
         selectedType = selectedType,
         selectedEmotion = selectedEmotion,
         selectedVideoCategory = selectedVideoCategory,
+        showFavorites = showFavorites,
         favoriteIds = favoriteIds,
         searchQuery = searchQuery,
         userType = userType,
@@ -186,8 +194,26 @@ fun GeneralLibraryScreen(
         onTabSelected = { viewModel.selectContentType(it) },
         onFilterClear = { viewModel.clearEmotionFilter() },
         onEmotionSelected = { viewModel.loadContentByEmotion(it) },
+        onFavoritesSelected = { viewModel.loadFavoriteContent() },
+        onFavoritesClear = { viewModel.clearFavoritesFilter() },
         onVideoCategorySelected = { viewModel.loadContentByVideoCategory(it) },
         onRetry = { viewModel.retry() },
+        onRefresh = {
+            if (selectedType == ContentType.Weather) {
+                scope.launch(Dispatchers.IO) {
+                    val location = try {
+                        com.softfocus.core.utils.LocationHelper.getCurrentLocation(context)
+                    } catch (e: Exception) {
+                        null
+                    }
+                    val latitude = location?.latitude ?: currentLocation?.first ?: -12.0464
+                    val longitude = location?.longitude ?: currentLocation?.second ?: -77.0428
+                    viewModel.refreshContent(latitude, longitude)
+                }
+            } else {
+                viewModel.refreshContent()
+            }
+        },
         onFavoriteClick = { viewModel.toggleFavorite(it) },
         onContentClick = {
             if (isSelectionMode) {
@@ -243,10 +269,14 @@ fun GeneralLibraryScreenContent(
     modifier: Modifier = Modifier,
     selectedEmotion: EmotionalTag? = null,
     selectedVideoCategory: VideoCategory? = null,
+    showFavorites: Boolean = false,
     onFilterClear: () -> Unit = {},
     onEmotionSelected: (EmotionalTag) -> Unit = {},
+    onFavoritesSelected: () -> Unit = {},
+    onFavoritesClear: () -> Unit = {},
     onVideoCategorySelected: (VideoCategory) -> Unit = {},
     onRetry: () -> Unit = {},
+    onRefresh: () -> Unit = {},
     userType: UserType? = null,
     isPatient: Boolean = false,
     isSelectionMode: Boolean = false,
@@ -374,6 +404,7 @@ fun GeneralLibraryScreenContent(
                         onContentLongClick = onContentSelectionToggle,
                         onFavoriteClick = onFavoriteClick,
                         onRetry = onRetry,
+                        onRefresh = onRefresh,
                         selectedEmotion = selectedEmotion
                     )
                 }
@@ -385,11 +416,20 @@ fun GeneralLibraryScreenContent(
     if (showFilterSheet) {
         FilterBottomSheet(
             selectedEmotion = selectedEmotion,
+            showFavorites = showFavorites,
             onEmotionSelected = {
                 if (it != null) {
                     onEmotionSelected(it)
                 } else {
                     onFilterClear()
+                }
+                showFilterSheet = false
+            },
+            onFavoritesSelected = {
+                if (showFavorites) {
+                    onFavoritesClear()
+                } else {
+                    onFavoritesSelected()
                 }
                 showFilterSheet = false
             },

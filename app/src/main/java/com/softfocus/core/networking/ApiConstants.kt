@@ -145,7 +145,6 @@ object ApiConstants {
         const val SEARCH = "library/search"
         const val CONTENT_BY_ID = "library/{contentId}"
 
-        // Favorites endpoints (General and Patient only)
         const val FAVORITES = "library/favorites"
         const val FAVORITE_BY_ID = "library/favorites/{favoriteId}"
 
@@ -162,7 +161,6 @@ object ApiConstants {
         const val RECOMMEND_CONTENT = "library/recommendations/content"
         const val RECOMMEND_BY_EMOTION = "library/recommendations/emotion/{emotion}"
 
-        // Helper functions for dynamic parameters
         fun getContentById(contentId: String) = CONTENT_BY_ID.replace("{contentId}", contentId)
         fun deleteFavorite(favoriteId: String) = FAVORITE_BY_ID.replace("{favoriteId}", favoriteId)
         fun completeAssignment(assignmentId: String) = COMPLETE_ASSIGNMENT.replace("{assignmentId}", assignmentId)

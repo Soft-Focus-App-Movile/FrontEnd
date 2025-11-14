@@ -22,6 +22,7 @@ sealed class GeneralLibraryUiState {
      * @property isSelectionMode Si está en modo selección (para psicólogos)
      * @property selectedIds IDs de contenido seleccionado (para psicólogos)
      * @property assignedContent Contenido asignado por el terapeuta (para pacientes)
+     * @property showFavorites Si está mostrando solo favoritos
      */
     data class Success(
         val contentByType: Map<ContentType, List<ContentItem>>,
@@ -29,7 +30,8 @@ sealed class GeneralLibraryUiState {
         val weatherCondition: WeatherCondition? = null,
         val isSelectionMode: Boolean = false,
         val selectedIds: Set<String> = emptySet(),
-        val assignedContent: List<ContentItem> = emptyList()
+        val assignedContent: List<ContentItem> = emptyList(),
+        val showFavorites: Boolean = false
     ) : GeneralLibraryUiState() {
         /**
          * Obtiene el contenido del tipo seleccionado

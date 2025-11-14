@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.softfocus.features.library.domain.models.ContentItem
+import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.presentation.shared.getDisplayName
 import com.softfocus.ui.theme.CrimsonBold
 import com.softfocus.ui.theme.SourceSansRegular
@@ -101,8 +102,9 @@ fun ContentCard(
                 }
             }
 
-            // Botón de favorito en esquina superior derecha (solo si NO está en modo selección)
-            if (!isSelectionMode) {
+            // Botón de favorito en esquina superior derecha (solo si NO está en modo selección y es Movie o Music)
+            if (!isSelectionMode && (content.type == ContentType.Movie ||
+                content.type == ContentType.Music)) {
                 IconButton(
                     onClick = onFavoriteClick,
                     modifier = Modifier
@@ -111,9 +113,9 @@ fun ContentCard(
                         .size(32.dp)
                 ) {
                     Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        imageVector = Icons.Filled.Favorite,
                         contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
-                        tint = if (isFavorite) Green49 else Color.White,
+                        tint = if (isFavorite) Color.Red else Color.White,
                         modifier = Modifier.size(20.dp)
                     )
                 }
