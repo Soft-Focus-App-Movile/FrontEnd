@@ -111,7 +111,11 @@ fun ChatHeader(summaryState: PsychologistSummaryState, navController: NavHostCon
         ) {
             // Contenedor clickeable para imagen y nombre
             Row(
-                modifier = Modifier.clickable {  },
+                modifier = Modifier.clickable {
+                    navController.navigate(
+                        Route.PsychologistChatProfile.path
+                    )
+                },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box {

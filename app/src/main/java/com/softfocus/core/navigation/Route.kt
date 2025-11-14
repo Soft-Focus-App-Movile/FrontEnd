@@ -103,6 +103,8 @@ Route(val path: String) {
 
     data object PatientPsychologistChat : Route("psychologist_chat")
 
+    data object PsychologistChatProfile : Route("psychologist_chat_profile")
+
     data object CrisisAlerts : Route("crisis_alerts")
 
     data object AIWelcome : Route("ai_welcome")

@@ -1,5 +1,6 @@
 package com.softfocus.features.profile.presentation.patient
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -41,7 +42,12 @@ import com.softfocus.ui.theme.ButtonPrimary
 import com.softfocus.R
 import java.net.URL
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.navigation.NavHostController
+import com.softfocus.core.navigation.Route
+import com.softfocus.features.profile.presentation.ProfileUiState
+import com.softfocus.features.profile.presentation.PsychologistLoadState
 import com.softfocus.ui.components.ProfileAvatar
 import com.softfocus.ui.theme.Blue77
 import com.softfocus.ui.theme.RedE8
@@ -64,6 +70,7 @@ fun PatientProfileScreen(
     onNavigateToHelpSupport: () -> Unit = {},
     onNavigateToMyPlan: () -> Unit = {},
     onLogout: () -> Unit = {},
+    navController: NavHostController,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -75,9 +82,9 @@ fun PatientProfileScreen(
 
     // Mostrar mensaje de error si ocurre
     LaunchedEffect(uiState) {
-        if (uiState is com.softfocus.features.profile.presentation.ProfileUiState.Error) {
-            val message = (uiState as com.softfocus.features.profile.presentation.ProfileUiState.Error).message
-            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+        if (uiState is ProfileUiState.Error) {
+            val message = (uiState as ProfileUiState.Error).message
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -125,10 +132,10 @@ fun PatientProfileScreen(
                         showDisconnectDialog = false
                         viewModel.disconnectPsychologist(
                             onSuccess = {
-                                android.widget.Toast.makeText(
+                                Toast.makeText(
                                     context,
                                     "Terapeuta desvinculado exitosamente",
-                                    android.widget.Toast.LENGTH_SHORT
+                                    Toast.LENGTH_SHORT
                                 ).show()
                                 // Navegar a la vista de conexión (General Home)
                                 onNavigateToConnect()
@@ -168,7 +175,7 @@ fun PatientProfileScreen(
         )
     }
 
-    if (uiState is com.softfocus.features.profile.presentation.ProfileUiState.Loading) {
+    if (uiState is ProfileUiState.Loading) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -260,23 +267,25 @@ fun PatientProfileScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             when (psychologistLoadState) {
-                is com.softfocus.features.profile.presentation.PsychologistLoadState.Success -> {
+                is PsychologistLoadState.Success -> {
                     assignedPsychologist?.let { psychologist ->
                         CurrentTherapistCard(
                             therapistName = psychologist.fullName,
                             therapistImageUrl = psychologist.profileImageUrl,
-                            onUnlinkClick = { showDisconnectDialog = true }
+                            onUnlinkClick = { showDisconnectDialog = true },
+                            navController = navController
                         )
                     }
                 }
-                is com.softfocus.features.profile.presentation.PsychologistLoadState.Loading -> {
+                is PsychologistLoadState.Loading -> {
                     CurrentTherapistCard(
                         therapistName = "Cargando...",
                         therapistImageUrl = null,
-                        onUnlinkClick = onNavigateToConnect
+                        onUnlinkClick = onNavigateToConnect,
+                        navController = navController
                     )
                 }
-                is com.softfocus.features.profile.presentation.PsychologistLoadState.NoTherapist -> {
+                is PsychologistLoadState.NoTherapist -> {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -301,7 +310,7 @@ fun PatientProfileScreen(
                         }
                     }
                 }
-                is com.softfocus.features.profile.presentation.PsychologistLoadState.Error -> {
+                is PsychologistLoadState.Error -> {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -386,7 +395,8 @@ fun PatientProfileScreen(
 fun CurrentTherapistCard(
     therapistName: String,
     therapistImageUrl: String?,
-    onUnlinkClick: () -> Unit
+    onUnlinkClick: () -> Unit,
+    navController: NavHostController
 ) {
     Card(
         modifier = Modifier
@@ -448,7 +458,9 @@ fun CurrentTherapistCard(
                         fontSize = 13.sp,
                         color = Blue77,
                         modifier = Modifier.clickable {
-                            // TODO: Dejar vacío o implementar la lógica de clic
+                            navController.navigate(
+                                Route.PsychologistChatProfile.path
+                            )
                         }
                     )
                 }
@@ -579,7 +591,7 @@ fun AsyncImageLoader(
     imageUrl: String,
     modifier: Modifier = Modifier
 ) {
-    var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(imageUrl) {
         withContext(Dispatchers.IO) {
@@ -615,6 +627,7 @@ private fun calculateAge(dateOfBirth: String): Int? {
     }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun PatientProfileScreenPreview() {
@@ -673,7 +686,8 @@ fun PatientProfileScreenPreview() {
         CurrentTherapistCard(
             therapistName = "Dra. Herrera",
             therapistImageUrl = null,
-            onUnlinkClick = { }
+            onUnlinkClick = { },
+            navController = navController
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -723,3 +737,4 @@ fun PatientProfileScreenPreview() {
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
+*/

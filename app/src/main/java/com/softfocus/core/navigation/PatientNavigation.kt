@@ -21,6 +21,7 @@ import com.softfocus.ui.components.navigation.PatientBottomNav
 import com.softfocus.core.utils.SessionManager
 import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
 import com.softfocus.features.therapy.presentation.patient.PsychologistChatScreen
+import com.softfocus.features.therapy.presentation.patient.psychologistprofile.PsyChatProfileScreen
 import com.softfocus.ui.components.navigation.PsychologistBottomNav
 
 
@@ -79,7 +80,8 @@ fun NavGraphBuilder.patientNavigation(
                         navController.navigate(Route.Login.path) {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    navController = navController
                 )
             }
         }
@@ -108,6 +110,25 @@ fun NavGraphBuilder.patientNavigation(
                 PsychologistChatScreen(
                     viewModel = patientPsychologistChatViewModel,
                     navController = navController
+                )
+            }
+        }
+    }
+
+    composable(Route.PsychologistChatProfile.path) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            bottomBar = { PatientBottomNav(navController) }
+        ){ paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)){
+
+                val psyChatProfileViewModel = remember {
+                    TherapyPresentationModule.getPsyChatProfileViewModel()
+                }
+
+                PsyChatProfileScreen(
+                    onBackClicked = { navController.popBackStack() },
+                    viewModel = psyChatProfileViewModel
                 )
             }
         }

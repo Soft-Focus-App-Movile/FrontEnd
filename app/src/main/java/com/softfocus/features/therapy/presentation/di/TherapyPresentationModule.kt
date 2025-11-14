@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit
 import com.softfocus.features.therapy.data.remote.SignalRService
 import com.softfocus.features.therapy.domain.usecases.GetRelationshipWithPatientUseCase
 import com.softfocus.features.therapy.presentation.patient.PsychologistChatViewModel
+import com.softfocus.features.therapy.presentation.patient.psychologistprofile.PsyChatProfileViewModel
 import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatViewModel
 
 object TherapyPresentationModule {
@@ -210,6 +211,13 @@ object TherapyPresentationModule {
         )
     }
 
-
+    fun getPsyChatProfileViewModel(): PsyChatProfileViewModel {
+        val context = applicationContext ?: throw IllegalStateException("TherapyPresentationModule not initialized")
+        return PsyChatProfileViewModel(
+            userSession = UserSession(context),
+            getMyRelationshipUseCase = getGetMyRelationshipUseCase(),
+            searchRepository = getSearchRepository()
+        )
+    }
 
 }
