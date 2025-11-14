@@ -9,16 +9,23 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.softfocus.features.profile.presentation.psychologist.PsychologistProfileScreen
 import com.softfocus.features.profile.presentation.psychologist.EditPersonalInfoScreen
 import com.softfocus.features.profile.presentation.psychologist.ProfessionalDataScreen
 import com.softfocus.features.profile.presentation.psychologist.MyInvitationCodeScreen
+import com.softfocus.features.profile.presentation.psychologist.PsychologistStatsScreen
 import com.softfocus.features.psychologist.presentation.di.PsychologistPresentationModule
 import com.softfocus.ui.components.navigation.PsychologistBottomNav
 import com.softfocus.core.utils.SessionManager
@@ -26,6 +33,13 @@ import com.softfocus.features.crisis.presentation.psychologist.CrisisAlertsScree
 import com.softfocus.features.crisis.presentation.di.CrisisInjection
 import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
 import com.softfocus.features.therapy.presentation.psychologist.patientlist.PatientListScreen
+import java.net.URLEncoder
+import java.net.URLDecoder
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.PatientDetailScreen
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.PatientDetailViewModel
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.softfocus.features.therapy.presentation.psychologist.patiendetail.tabs.PatientChatViewModel
 
 
 /**
@@ -65,7 +79,7 @@ fun NavGraphBuilder.psychologistNavigation(
                         navController.navigate(Route.NotificationPreferences.path)
                     },
                     onNavigateToPlan = {
-                        navController.navigate(Route.PsychologistPlan.path)
+                        navController.navigate(Route.MyPlan.path)
                     },
                     onNavigateToStats = {
                         navController.navigate(Route.PsychologistStats.path)
@@ -74,7 +88,9 @@ fun NavGraphBuilder.psychologistNavigation(
                         navController.navigate(Route.ProfessionalData.path)
                     },
                     onNavigateBack = {
-                        navController.popBackStack()
+                        navController.navigate(Route.Home.path) {
+                            popUpTo(Route.Home.path) { inclusive = true }
+                        }
                     },
                     onLogout = {
                         SessionManager.logout(context)
@@ -116,6 +132,19 @@ fun NavGraphBuilder.psychologistNavigation(
                 navController.popBackStack()
             },
             viewModel = psychologistHomeViewModel
+        )
+    }
+
+    // Psychologist Stats Screen
+    composable(Route.PsychologistStats.path) {
+        val psychologistHomeViewModel = remember {
+            PsychologistPresentationModule.getPsychologistHomeViewModel(context)
+        }
+        PsychologistStatsScreen(
+            viewModel = psychologistHomeViewModel,
+            onNavigateBack = {
+                navController.popBackStack()
+            }
         )
     }
 
@@ -163,20 +192,109 @@ fun NavGraphBuilder.psychologistNavigation(
                 PatientListScreen(
                     viewModel = patientListViewModel,
                     onPatientClick = { patient ->
-                        // 3. (Extra) Manejar la navegación al detalle del paciente
-                        // Esta ruta ya existe en tu archivo Route.kt
+                        val encodedPatientName = URLEncoder.encode(patient.patientName, "UTF-8")
                         navController.navigate(
                             Route.PsychologistPatientDetail.createRoute(
                                 patientId = patient.patientId,
-                                relationshipId = patient.id, // El ID del PatientDirectory es el RelationshipId
-                                patientName = patient.patientName
+                                relationshipId = patient.id,
+                                startDate = patient.startDate,
+                                profilePhotoUrl = patient.profilePhotoUrl
                             )
                         )
-                    }
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
     }
+
+    composable(
+        route = Route.PsychologistPatientDetail.path,
+        arguments = listOf(
+            navArgument("patientId") { type = NavType.StringType },
+            navArgument("relationshipId") { type = NavType.StringType },
+            navArgument("startDate") { type = NavType.StringType },
+            navArgument("profilePhotoUrl") { type = NavType.StringType; nullable = true }
+        ),
+    ) { backStackEntry ->
+        // Extraemos los argumentos
+        val patientId = backStackEntry.arguments?.getString("patientId") ?: ""
+        val relationshipId = backStackEntry.arguments?.getString("relationshipId") ?: ""
+        // Decodificamos el nombre
+        val patientName = URLDecoder.decode(backStackEntry.arguments?.getString("patientName") ?: "Paciente", "UTF-8")
+        val profilePhotoUrl = backStackEntry.arguments?.getString("profilePhotoUrl")?.let {
+            if (it == "null") null else URLDecoder.decode(it, "UTF-8")
+        }
+
+        // Creamos el ViewModel pasándole los IDs
+        val viewModel: PatientDetailViewModel = viewModel(
+            factory = object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    // Usamos la función que creamos en TherapyPresentationModule
+                    return TherapyPresentationModule.getPatientDetailViewModel(
+                        backStackEntry.savedStateHandle
+                    ) as T
+                }
+            }
+        )
+
+        val summaryState by viewModel.summaryState.collectAsState()
+
+        // Llamamos a la pantalla
+        Scaffold(
+            bottomBar = { PsychologistBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                PatientDetailScreen(
+                    navController = navController,
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    patientId = patientId,
+                    relationshipId = relationshipId,
+                    patientName = patientName,
+                    profilePhotoUrl = "$profilePhotoUrl"
+                )
+            }
+        }
+    }
+
+    // --- AÑADIR EL DESTINO PARA PATIENT CHAT ---
+    composable(
+        route = Route.PsychologistPatientChat.path,
+        arguments = listOf(
+            navArgument("patientId") { type = NavType.StringType },
+            navArgument("relationshipId") { type = NavType.StringType },
+            navArgument("patientName") { type = NavType.StringType },
+            navArgument("profilePhotoUrl") { type = NavType.StringType; nullable = true }
+        )
+    ) { backStackEntry ->
+
+        val chatViewModel: PatientChatViewModel = remember(backStackEntry) {
+            val factory = object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return TherapyPresentationModule.getPatientChatViewModel(
+                        backStackEntry.savedStateHandle
+                    ) as T
+                }
+            }
+            ViewModelProvider(backStackEntry, factory)[PatientChatViewModel::class.java]
+        }
+
+        Scaffold(
+            containerColor = Color(0xFFF8FFEA),
+            bottomBar = { PsychologistBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)){
+                PatientChatScreen(
+                    viewModel = chatViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+        }
+    }
+
+
     composable(Route.Library.path) {
         Scaffold(
             containerColor = Color.Transparent,
@@ -247,6 +365,21 @@ fun NavGraphBuilder.psychologistNavigation(
                                 Toast.makeText(context, "Contenido no disponible para visualización", Toast.LENGTH_SHORT).show()
                             }
                         }
+                    }
+                )
+            }
+        }
+    }
+
+    composable(Route.MyPlan.path) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            bottomBar = { PsychologistBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                com.softfocus.features.subscription.presentation.MyPlanScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }

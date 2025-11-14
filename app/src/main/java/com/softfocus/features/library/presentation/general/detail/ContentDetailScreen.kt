@@ -72,6 +72,7 @@ fun ContentDetailScreen(
                     .fillMaxSize()
                     .background(Color.Black)
                     .verticalScroll(scrollState)
+                    .statusBarsPadding()
             ) {
                 // Imagen hero con botón de volver (o reproductor de trailer)
                 ContentHeroImage(

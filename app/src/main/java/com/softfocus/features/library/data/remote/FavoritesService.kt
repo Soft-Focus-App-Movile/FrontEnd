@@ -3,6 +3,7 @@ package com.softfocus.features.library.data.remote
 import com.softfocus.core.networking.ApiConstants
 import com.softfocus.features.library.data.models.request.FavoriteRequestDto
 import com.softfocus.features.library.data.models.response.FavoriteResponseDto
+import com.softfocus.features.library.data.models.response.FavoritesListResponseDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -23,18 +24,19 @@ interface FavoritesService {
      * @param token Token de autenticación Bearer
      * @param contentType Filtro opcional por tipo de contenido (Movie, Music, Video, Place)
      * @param emotionFilter Filtro opcional por emoción (Happy, Sad, Anxious, Calm, Energetic)
-     * @return Lista de favoritos del usuario
+     * @return Objeto con lista de favoritos y total
      *
      * Ejemplo de uso:
      * ```
      * // Obtener todos los favoritos
-     * val allFavorites = getFavorites("Bearer $token")
+     * val response = getFavorites("Bearer $token")
+     * val allFavorites = response.favorites
      *
      * // Filtrar por tipo
-     * val movieFavorites = getFavorites("Bearer $token", contentType = "Movie")
+     * val movieResponse = getFavorites("Bearer $token", contentType = "Movie")
      *
      * // Filtrar por emoción
-     * val calmFavorites = getFavorites("Bearer $token", emotionFilter = "Calm")
+     * val calmResponse = getFavorites("Bearer $token", emotionFilter = "Calm")
      * ```
      */
     @GET(ApiConstants.Library.FAVORITES)
@@ -42,7 +44,7 @@ interface FavoritesService {
         @Header("Authorization") token: String,
         @Query("contentType") contentType: String? = null,
         @Query("emotionFilter") emotionFilter: String? = null
-    ): List<FavoriteResponseDto>
+    ): FavoritesListResponseDto
 
     /**
      * Agrega un contenido a favoritos
@@ -68,17 +70,6 @@ interface FavoritesService {
         @Body request: FavoriteRequestDto
     ): FavoriteResponseDto
 
-    /**
-     * Elimina un contenido de favoritos
-     *
-     * @param token Token de autenticación Bearer
-     * @param favoriteId ID del favorito a eliminar
-     *
-     * Ejemplo de uso:
-     * ```
-     * deleteFavorite("Bearer $token", "favoriteId123")
-     * ```
-     */
     @DELETE(ApiConstants.Library.FAVORITE_BY_ID)
     suspend fun deleteFavorite(
         @Header("Authorization") token: String,

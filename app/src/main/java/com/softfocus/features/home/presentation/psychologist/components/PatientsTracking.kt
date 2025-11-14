@@ -32,7 +32,7 @@ import com.softfocus.ui.theme.White
 @Composable
 fun PatientsTracking(
     patients: List<PatientDirectory> = emptyList(),
-    onPatientClick: (String) -> Unit = {},
+    onPatientClick: (PatientDirectory) -> Unit = {},
     onViewAllClick: () -> Unit = {}
 ) {
     Column(
@@ -64,7 +64,7 @@ fun PatientsTracking(
             patients.take(4).forEach { patient ->
                 PatientActivityCard(
                     patient = patient,
-                    onClick = { onPatientClick(patient.patientId) }
+                    onClick = { onPatientClick(patient) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -116,12 +116,12 @@ fun EmptyPatientsState() {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Conecta con alguno compartiendo tu código de invitación",
+            text = "Conecta compartiendo tu código de invitación",
             style = SourceSansRegular,
             fontSize = 14.sp,
             color = Gray828,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
+            modifier = Modifier.padding(horizontal = 30.dp)
         )
     }
 }
@@ -134,7 +134,7 @@ fun PatientActivityCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable { onClick()},
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = GreenF2),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

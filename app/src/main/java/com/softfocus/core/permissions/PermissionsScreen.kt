@@ -18,6 +18,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,14 +41,29 @@ fun PermissionsScreen(
     onPermissionsGranted: () -> Unit
 ) {
     val context = LocalContext.current
-    var permissionsRequested by remember { mutableStateOf(false) }
+    var currentStep by remember { mutableStateOf(0) } // 0 = location, 1 = camera, 2 = gallery, 3 = done
 
-    val permissionsLauncher = rememberLauncherForActivityResult(
+    // Launcher para permisos de ubicación
+    val locationPermissionsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        // Después de solicitar ubicación, pasar a cámara
+        currentStep = 1
+    }
 
+    // Launcher para permiso de cámara
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        // Después de solicitar cámara, pasar a galería
+        currentStep = 2
+    }
+
+    // Launcher para permiso de galería
+    val galleryPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        // Después de solicitar galería, terminar
         savePermissionsRequested(context)
         onPermissionsGranted()
     }
@@ -95,20 +111,29 @@ fun PermissionsScreen(
 
         PermissionItem(
             title = "Cámara",
-            description = "Para futuras funcionalidades como verificación de documentos"
+            description = "Para detectar emociones mediante reconocimiento facial y ayudarte con tu bienestar emocional"
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        PermissionItem(
+            title = "Fotos y medios",
+            description = "Para seleccionar fotos de tu galería y analizar emociones"
         )
 
         Spacer(modifier = Modifier.height(48.dp))
 
         Button(
             onClick = {
-                permissionsLauncher.launch(
-                    arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.CAMERA
+                if (currentStep == 0) {
+                    // Primero solicitar ubicación
+                    locationPermissionsLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
                     )
-                )
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -143,6 +168,22 @@ fun PermissionsScreen(
                 fontSize = 16.sp,
                 color = Color.Gray
             )
+        }
+    }
+
+    // Cuando currentStep cambia, solicitar permisos secuencialmente
+    LaunchedEffect(currentStep) {
+        when (currentStep) {
+            1 -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            2 -> {
+                // Para Android 13+ (API 33) usar READ_MEDIA_IMAGES, para versiones anteriores READ_EXTERNAL_STORAGE
+                val permission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    Manifest.permission.READ_MEDIA_IMAGES
+                } else {
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                }
+                galleryPermissionLauncher.launch(permission)
+            }
         }
     }
 }

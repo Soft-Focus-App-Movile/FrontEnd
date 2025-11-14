@@ -9,7 +9,9 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -17,6 +19,10 @@ import com.softfocus.features.profile.presentation.patient.PatientProfileScreen
 import com.softfocus.features.profile.presentation.edit.EditProfileScreen
 import com.softfocus.ui.components.navigation.PatientBottomNav
 import com.softfocus.core.utils.SessionManager
+import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
+import com.softfocus.features.therapy.presentation.patient.PsychologistChatScreen
+import com.softfocus.features.therapy.presentation.patient.psychologistprofile.PsyChatProfileScreen
+import com.softfocus.ui.components.navigation.PsychologistBottomNav
 
 
 /**
@@ -47,7 +53,9 @@ fun NavGraphBuilder.patientNavigation(
             ) {
                 PatientProfileScreen(
                     onNavigateToConnect = {
-                        navController.navigate(Route.ConnectPsychologist.path)
+                        navController.navigate(Route.Home.path) {
+                            popUpTo(Route.Home.path) { inclusive = true }
+                        }
                     },
                     onNavigateBack = {
                         navController.popBackStack()
@@ -55,15 +63,25 @@ fun NavGraphBuilder.patientNavigation(
                     onNavigateToEditProfile = {
                         navController.navigate(Route.EditProfile.path)
                     },
-                    onNavigateToNotifications = { // ← AGREGAR ESTAS 3 LÍNEAS
+                    onNavigateToNotifications = {
                         navController.navigate(Route.NotificationPreferences.path)
+                    },
+                    onNavigateToPrivacyPolicy = {
+                        navController.navigate(Route.PrivacyPolicy.path)
+                    },
+                    onNavigateToHelpSupport = {
+                        navController.navigate(Route.HelpSupport.path)
+                    },
+                    onNavigateToMyPlan = {
+                        navController.navigate(Route.PatientPlan.path)
                     },
                     onLogout = {
                         SessionManager.logout(context)
                         navController.navigate(Route.Login.path) {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    navController = navController
                 )
             }
         }
@@ -78,6 +96,44 @@ fun NavGraphBuilder.patientNavigation(
         )
     }
 
+    composable(Route.PatientPsychologistChat.path) {
+        Scaffold(
+            containerColor = Color(0xFFF8FFEA),
+            bottomBar = { PatientBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)){
+
+                val patientPsychologistChatViewModel = remember {
+                    TherapyPresentationModule.getPsychologistChatViewModel()
+                }
+
+                PsychologistChatScreen(
+                    viewModel = patientPsychologistChatViewModel,
+                    navController = navController
+                )
+            }
+        }
+    }
+
+    composable(Route.PsychologistChatProfile.path) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            bottomBar = { PatientBottomNav(navController) }
+        ){ paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)){
+
+                val psyChatProfileViewModel = remember {
+                    TherapyPresentationModule.getPsyChatProfileViewModel()
+                }
+
+                PsyChatProfileScreen(
+                    onBackClicked = { navController.popBackStack() },
+                    viewModel = psyChatProfileViewModel
+                )
+            }
+        }
+    }
+
     // Library Screen for Patient
     composable(Route.Library.path) {
         Scaffold(
@@ -87,15 +143,11 @@ fun NavGraphBuilder.patientNavigation(
             Box(modifier = Modifier.padding(paddingValues)) {
                 com.softfocus.features.library.presentation.general.browse.GeneralLibraryScreen(
                     onContentClick = { content ->
-                        // Navegar a ContentDetailScreen para Movies y Places
-                        // Abrir directamente Spotify/YouTube para Music y Videos
                         when (content.type) {
                             com.softfocus.features.library.domain.models.ContentType.Movie -> {
-                                // Navegar a la pantalla de detalle
                                 navController.navigate(Route.LibraryGeneralDetail.createRoute(content.id))
                             }
                             com.softfocus.features.library.domain.models.ContentType.Weather -> {
-                                // Weather solo muestra información, no navega
                                 Toast.makeText(context, "Información del clima en tu ubicación actual", Toast.LENGTH_SHORT).show()
                             }
                             com.softfocus.features.library.domain.models.ContentType.Music -> {
@@ -135,6 +187,21 @@ fun NavGraphBuilder.patientNavigation(
                                 }
                             }
                         }
+                    }
+                )
+            }
+        }
+    }
+
+    composable(Route.PatientPlan.path) {
+        Scaffold(
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            bottomBar = { PatientBottomNav(navController) }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                com.softfocus.features.subscription.presentation.PatientPlanScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }

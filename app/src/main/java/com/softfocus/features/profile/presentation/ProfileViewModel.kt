@@ -1,13 +1,17 @@
 package com.softfocus.features.profile.presentation
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.softfocus.core.data.local.LocalUserDataSource
 import com.softfocus.core.data.local.UserSession
 import com.softfocus.features.auth.domain.models.User
 import com.softfocus.features.profile.domain.models.AssignedPsychologist
 import com.softfocus.features.profile.domain.repositories.ProfileRepository
+import com.softfocus.features.therapy.domain.repositories.TherapyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +21,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    private val userSession: UserSession
+    private val therapyRepository: TherapyRepository,
+    private val userSession: UserSession,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
@@ -31,6 +37,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _psychologistLoadState = MutableStateFlow<PsychologistLoadState>(PsychologistLoadState.Loading)
     val psychologistLoadState: StateFlow<PsychologistLoadState> = _psychologistLoadState.asStateFlow()
+
+    private val _relationshipId = MutableStateFlow<String?>(null)
+    val relationshipId: StateFlow<String?> = _relationshipId.asStateFlow()
 
     init {
         loadProfile()
@@ -72,16 +81,38 @@ class ProfileViewModel @Inject constructor(
     private fun loadAssignedPsychologist() {
         viewModelScope.launch {
             _psychologistLoadState.value = PsychologistLoadState.Loading
-            profileRepository.getAssignedPsychologist()
-                .onSuccess { psychologist ->
-                    if (psychologist != null) {
-                        _assignedPsychologist.value = psychologist
-                        _psychologistLoadState.value = PsychologistLoadState.Success
+
+            // Primero obtener la relación terapéutica para tener el relationshipId
+            therapyRepository.getMyRelationship()
+                .onSuccess { relationship ->
+                    if (relationship != null && relationship.isActive) {
+                        // Guardar el relationshipId
+                        _relationshipId.value = relationship.id
+
+                        // Luego cargar datos del psicólogo
+                        viewModelScope.launch {
+                            profileRepository.getAssignedPsychologist()
+                                .onSuccess { psychologist ->
+                                    if (psychologist != null) {
+                                        _assignedPsychologist.value = psychologist
+                                        _psychologistLoadState.value = PsychologistLoadState.Success
+                                    } else {
+                                        _psychologistLoadState.value = PsychologistLoadState.NoTherapist
+                                    }
+                                }
+                                .onFailure { error ->
+                                    _psychologistLoadState.value = PsychologistLoadState.Error(
+                                        error.message ?: "Error al cargar información del terapeuta"
+                                    )
+                                }
+                        }
                     } else {
+                        _relationshipId.value = null
                         _psychologistLoadState.value = PsychologistLoadState.NoTherapist
                     }
                 }
                 .onFailure { error ->
+                    _relationshipId.value = null
                     _psychologistLoadState.value = PsychologistLoadState.Error(
                         error.message ?: "Error al cargar información del terapeuta"
                     )
@@ -181,6 +212,39 @@ class ProfileViewModel @Inject constructor(
                     android.util.Log.e("ProfileViewModel", "Error updating professional profile", error)
                     _uiState.value = ProfileUiState.Error(
                         error.message ?: "Error al actualizar perfil profesional"
+                    )
+                }
+        }
+    }
+
+    fun disconnectPsychologist(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            val currentRelationshipId = _relationshipId.value
+            if (currentRelationshipId == null) {
+                _uiState.value = ProfileUiState.Error("No hay una relación terapéutica activa")
+                return@launch
+            }
+
+            _uiState.value = ProfileUiState.Loading
+
+            therapyRepository.disconnectRelationship(currentRelationshipId)
+                .onSuccess {
+                    // Limpiar el estado de la relación terapéutica en SharedPreferences
+                    val localUserDataSource = LocalUserDataSource(context)
+                    localUserDataSource.clearTherapeuticRelationship()
+
+                    // Actualizar estado del psicólogo a NoTherapist
+                    _assignedPsychologist.value = null
+                    _relationshipId.value = null
+                    _psychologistLoadState.value = PsychologistLoadState.NoTherapist
+                    _uiState.value = ProfileUiState.Success
+
+                    // Llamar callback para navegación
+                    onSuccess()
+                }
+                .onFailure { error ->
+                    _uiState.value = ProfileUiState.Error(
+                        error.message ?: "Error al desvincular terapeuta"
                     )
                 }
         }

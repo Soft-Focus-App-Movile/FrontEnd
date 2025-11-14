@@ -22,7 +22,8 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
                 val preferences = body.preferences?.map { it.toDomain() } ?: emptyList()
                 Result.success(preferences)
             } else {
-                Result.failure(Exception("Error al obtener preferencias: ${response.message()}"))
+                val errorMsg = "Error al obtener preferencias: ${response.code()} - ${response.message()}"
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
             Result.failure(Exception("Error de red al obtener preferencias: ${e.message}", e))
@@ -39,7 +40,6 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
         return try {
             val formatter = DateTimeFormatter.ofPattern("HH:mm")
 
-            // Mapear las preferencias al formato del backend
             val preferenceDtos = preferences.map { pref ->
                 val scheduleDto = pref.schedule?.let {
                     NotificationScheduleDto(
@@ -48,8 +48,6 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
                         daysOfWeek = it.daysOfWeek
                     )
                 }
-
-                android.util.Log.d("NotifRepo", "Mapeando ${pref.notificationType}: schedule=${scheduleDto}")
 
                 NotificationPreferenceDto(
                     notificationType = pref.notificationType.name
@@ -61,24 +59,19 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
                 )
             }
 
-            android.util.Log.d("NotifRepo", "Enviando al backend: ${preferenceDtos.map { "${it.notificationType}=${it.isEnabled}, schedule=${it.schedule}" }}")
-
             val response = notificationService.updatePreferences(
                 UpdatePreferencesRequestDto(preferenceDtos)
             )
 
-            android.util.Log.d("NotifRepo", "Response code: ${response.code()}")
-
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 val updatedPreferences = body.preferences?.map { it.toDomain() } ?: emptyList()
-                android.util.Log.d("NotifRepo", "Preferencias recibidas: ${updatedPreferences.map { "${it.notificationType}=${it.isEnabled}, schedule=${it.schedule}" }}")
                 Result.success(updatedPreferences)
             } else {
-                Result.failure(Exception("Error al actualizar preferencias: ${response.code()} - ${response.message()}"))
+                val errorMsg = "Error al actualizar preferencias: ${response.code()} - ${response.message()}"
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
-            android.util.Log.e("NotifRepo", "Excepción al actualizar preferencias", e)
             Result.failure(Exception("Error de red al actualizar preferencias: ${e.message}", e))
         }
     }
@@ -92,7 +85,8 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
                 val preferences = body.preferences?.map { it.toDomain() } ?: emptyList()
                 Result.success(preferences)
             } else {
-                Result.failure(Exception("Error al resetear preferencias: ${response.message()}"))
+                val errorMsg = "Error al resetear preferencias: ${response.code()} - ${response.message()}"
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
             Result.failure(Exception("Error de red al resetear preferencias: ${e.message}", e))

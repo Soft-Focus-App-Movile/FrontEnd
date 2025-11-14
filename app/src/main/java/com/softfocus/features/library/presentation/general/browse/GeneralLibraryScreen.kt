@@ -1,25 +1,33 @@
 package com.softfocus.features.library.presentation.general.browse
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
@@ -43,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.softfocus.core.common.result.Result
 import com.softfocus.core.data.local.UserSession
 import com.softfocus.features.auth.domain.models.UserType
 import com.softfocus.features.library.assignments.presentation.AssignedContentScreen
@@ -63,6 +72,9 @@ import com.softfocus.features.library.presentation.general.browse.components.Sea
 import com.softfocus.features.library.presentation.general.browse.components.VideoCategory
 import com.softfocus.features.library.presentation.shared.getDisplayName
 import com.softfocus.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Pantalla principal de biblioteca para usuarios General
@@ -80,8 +92,8 @@ import com.softfocus.ui.theme.*
 @Composable
 fun GeneralLibraryScreen(
     modifier: Modifier = Modifier,
-    viewModel: GeneralLibraryViewModel = libraryViewModelWithTherapy { libRepo, therapyRepo ->
-        GeneralLibraryViewModel(libRepo, therapyRepo)
+    viewModel: GeneralLibraryViewModel = libraryViewModelWithTherapy { libRepo, therapyRepo, trackingRepo ->
+        GeneralLibraryViewModel(libRepo, therapyRepo, trackingRepo)
     },
     onContentClick: (ContentItem) -> Unit = {},
 ) {
@@ -93,6 +105,9 @@ fun GeneralLibraryScreen(
     val selectedType by viewModel.selectedType.collectAsState()
     val selectedEmotion by viewModel.selectedEmotion.collectAsState()
     val selectedVideoCategory by viewModel.selectedVideoCategory.collectAsState()
+    val showFavoritesByType by viewModel.showFavoritesByType.collectAsState()
+    // Obtener el estado de favoritos del tipo actual
+    val showFavorites = showFavoritesByType[selectedType] ?: false
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val selectedContentIds by viewModel.selectedContentIds.collectAsState()
     val patients by viewModel.patients.collectAsState()
@@ -104,26 +119,40 @@ fun GeneralLibraryScreen(
 
     val isPsychologist = userType == UserType.PSYCHOLOGIST
     val isSelectionMode = isPsychologist && selectedContentIds.isNotEmpty()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val hasTherapist = remember { mutableStateOf<Boolean?>(null) }
+    var currentLocation by remember { mutableStateOf<Pair<Double, Double>?>(null) }
 
     LaunchedEffect(Unit) {
         if (!isPsychologist) {
-            val relationshipResult = viewModel.getMyRelationship()
-            relationshipResult.onSuccess { relationship ->
-                hasTherapist.value = relationship != null && relationship.isActive
-            }.onFailure {
-                hasTherapist.value = false
+            when (val relationshipResult = viewModel.getMyRelationship()) {
+                is Result.Success -> {
+                    hasTherapist.value = relationshipResult.data != null && relationshipResult.data.isActive
+                }
+                is Result.Error -> {
+                    hasTherapist.value = false
+                }
             }
         }
     }
 
     LaunchedEffect(selectedType) {
         if (selectedType == ContentType.Weather) {
-            val location = com.softfocus.core.utils.LocationHelper.getCurrentLocation(context)
-            val latitude = location?.latitude ?: -12.0464
-            val longitude = location?.longitude ?: -77.0428
-            viewModel.loadWeather(latitude, longitude)
+            android.util.Log.d("GeneralLibraryScreen", "Tab Weather seleccionado, obteniendo ubicación...")
+            withContext(Dispatchers.IO) {
+                val location = try {
+                    com.softfocus.core.utils.LocationHelper.getCurrentLocation(context)
+                } catch (e: Exception) {
+                    android.util.Log.e("GeneralLibraryScreen", "Error al obtener ubicación", e)
+                    null
+                }
+                val latitude = location?.latitude ?: -12.0464
+                val longitude = location?.longitude ?: -77.0428
+                currentLocation = Pair(latitude, longitude)
+                android.util.Log.d("GeneralLibraryScreen", "Ubicación: lat=$latitude, lon=$longitude (${if (location != null) "GPS" else "default"})")
+                viewModel.loadWeather(latitude, longitude)
+            }
         }
     }
 
@@ -143,7 +172,7 @@ fun GeneralLibraryScreen(
 
     LaunchedEffect(isPatient, assignmentsViewModel) {
         if (isPatient && assignmentsViewModel != null) {
-            assignmentsViewModel.loadAssignedContent(completed = null)
+            assignmentsViewModel.loadAssignedContent(completed = false)
         }
     }
 
@@ -153,6 +182,7 @@ fun GeneralLibraryScreen(
         selectedType = selectedType,
         selectedEmotion = selectedEmotion,
         selectedVideoCategory = selectedVideoCategory,
+        showFavorites = showFavorites,
         favoriteIds = favoriteIds,
         searchQuery = searchQuery,
         userType = userType,
@@ -164,8 +194,26 @@ fun GeneralLibraryScreen(
         onTabSelected = { viewModel.selectContentType(it) },
         onFilterClear = { viewModel.clearEmotionFilter() },
         onEmotionSelected = { viewModel.loadContentByEmotion(it) },
+        onFavoritesSelected = { viewModel.loadFavoriteContent() },
+        onFavoritesClear = { viewModel.clearFavoritesFilter() },
         onVideoCategorySelected = { viewModel.loadContentByVideoCategory(it) },
         onRetry = { viewModel.retry() },
+        onRefresh = {
+            if (selectedType == ContentType.Weather) {
+                scope.launch(Dispatchers.IO) {
+                    val location = try {
+                        com.softfocus.core.utils.LocationHelper.getCurrentLocation(context)
+                    } catch (e: Exception) {
+                        null
+                    }
+                    val latitude = location?.latitude ?: currentLocation?.first ?: -12.0464
+                    val longitude = location?.longitude ?: currentLocation?.second ?: -77.0428
+                    viewModel.refreshContent(latitude, longitude)
+                }
+            } else {
+                viewModel.refreshContent()
+            }
+        },
         onFavoriteClick = { viewModel.toggleFavorite(it) },
         onContentClick = {
             if (isSelectionMode) {
@@ -221,10 +269,14 @@ fun GeneralLibraryScreenContent(
     modifier: Modifier = Modifier,
     selectedEmotion: EmotionalTag? = null,
     selectedVideoCategory: VideoCategory? = null,
+    showFavorites: Boolean = false,
     onFilterClear: () -> Unit = {},
     onEmotionSelected: (EmotionalTag) -> Unit = {},
+    onFavoritesSelected: () -> Unit = {},
+    onFavoritesClear: () -> Unit = {},
     onVideoCategorySelected: (VideoCategory) -> Unit = {},
     onRetry: () -> Unit = {},
+    onRefresh: () -> Unit = {},
     userType: UserType? = null,
     isPatient: Boolean = false,
     isSelectionMode: Boolean = false,
@@ -234,9 +286,16 @@ fun GeneralLibraryScreenContent(
     onAssignTaskClick: () -> Unit = {}
 ) {
     var showFilterSheet by remember { mutableStateOf(false) }
-    var currentTab by remember { mutableStateOf("content") }
 
     val isPsychologist = userType == UserType.PSYCHOLOGIST
+
+    var currentTab by remember { mutableStateOf(if (isPatient) "assignments" else "content") }
+
+    LaunchedEffect(isPatient) {
+        if (isPatient) {
+            currentTab = "assignments"
+        }
+    }
 
     val availableTabs = remember(userType) {
         when (userType) {
@@ -277,7 +336,7 @@ fun GeneralLibraryScreenContent(
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(paddingValues)
         ) {
             LibraryTabs(
@@ -289,59 +348,66 @@ fun GeneralLibraryScreenContent(
                 onContentTypeSelected = onTabSelected
             )
 
-            when (selectedType) {
-                ContentType.Video -> {
-                    CategoryIcons(
-                        selectedCategory = selectedVideoCategory,
-                        onCategoryClick = onVideoCategorySelected,
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                }
-                ContentType.Weather -> {
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                else -> {
-                    SearchBarWithFilter(
-                        searchQuery = searchQuery,
-                        onSearchQueryChange = onSearchQueryChange,
-                        onFilterClick = { showFilterSheet = true }
-                    )
+            if (currentTab != "assignments") {
+                when (selectedType) {
+                    ContentType.Video -> {
+                        CategoryIcons(
+                            selectedCategory = selectedVideoCategory,
+                            onCategoryClick = onVideoCategorySelected,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    }
+                    ContentType.Weather -> {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    else -> {
+                        SearchBarWithFilter(
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = onSearchQueryChange,
+                            onFilterClick = { showFilterSheet = true }
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (isPatient && currentTab == "assignments" && assignmentsViewModel != null) {
-                AssignedContentScreen(
-                    viewModel = assignmentsViewModel,
-                    onContentClick = { contentId, contentType ->
-                        onContentClick(ContentItem(
-                            id = contentId,
-                            externalId = contentId,
-                            type = contentType,
-                            title = "",
-                            overview = null,
-                            posterUrl = null,
-                            rating = null,
-                            duration = null,
-                            genres = emptyList()
-                        ))
-                    }
-                )
-            } else {
-                LibraryContent(
-                    uiState = uiState,
-                    selectedType = selectedType,
-                    searchQuery = searchQuery,
-                    favoriteIds = favoriteIds,
-                    selectedContentIds = selectedContentIds,
-                    isSelectionMode = isSelectionMode,
-                    isPsychologist = isPsychologist,
-                    onContentClick = onContentClick,
-                    onContentLongClick = onContentSelectionToggle,
-                    onFavoriteClick = onFavoriteClick,
-                    onRetry = onRetry
-                )
+            // Envolver el contenido scrollable en Box con weight para evitar altura infinita
+            Box(modifier = Modifier.weight(1f)) {
+                if (isPatient && currentTab == "assignments" && assignmentsViewModel != null) {
+                    AssignedContentScreen(
+                        viewModel = assignmentsViewModel,
+                        onContentClick = { contentId, contentType ->
+                            onContentClick(ContentItem(
+                                id = contentId,
+                                externalId = contentId,
+                                type = contentType,
+                                title = "",
+                                overview = null,
+                                posterUrl = null,
+                                rating = null,
+                                duration = null,
+                                genres = emptyList()
+                            ))
+                        }
+                    )
+                } else {
+                    LibraryContent(
+                        uiState = uiState,
+                        selectedType = selectedType,
+                        searchQuery = searchQuery,
+                        favoriteIds = favoriteIds,
+                        selectedContentIds = selectedContentIds,
+                        isSelectionMode = isSelectionMode,
+                        isPsychologist = isPsychologist,
+                        onContentClick = onContentClick,
+                        onContentLongClick = onContentSelectionToggle,
+                        onFavoriteClick = onFavoriteClick,
+                        onRetry = onRetry,
+                        onRefresh = onRefresh,
+                        selectedEmotion = selectedEmotion
+                    )
+                }
             }
         }
     }
@@ -350,11 +416,20 @@ fun GeneralLibraryScreenContent(
     if (showFilterSheet) {
         FilterBottomSheet(
             selectedEmotion = selectedEmotion,
+            showFavorites = showFavorites,
             onEmotionSelected = {
                 if (it != null) {
                     onEmotionSelected(it)
                 } else {
                     onFilterClear()
+                }
+                showFilterSheet = false
+            },
+            onFavoritesSelected = {
+                if (showFavorites) {
+                    onFavoritesClear()
+                } else {
+                    onFavoritesSelected()
                 }
                 showFilterSheet = false
             },

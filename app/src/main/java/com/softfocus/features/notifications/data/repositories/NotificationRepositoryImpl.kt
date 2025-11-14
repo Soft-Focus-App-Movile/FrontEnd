@@ -30,8 +30,8 @@ class NotificationRepositoryImpl @Inject constructor(
             val response = notificationService.getNotifications(
                 status = status?.name?.lowercase(),
                 type = type?.name?.lowercase(),
-                page = validPage,  // ✅ Siempre positivo
-                size = validSize   // ✅ Siempre positivo
+                page = validPage,
+                size = validSize
             )
 
             if (response.isSuccessful && response.body() != null) {
@@ -61,7 +61,6 @@ class NotificationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun sendNotification(notification: Notification): Result<Notification> {
-        // Este método generalmente es para uso interno del backend
         return Result.failure(Exception("No implementado en cliente"))
     }
 
@@ -108,8 +107,6 @@ class NotificationRepositoryImpl @Inject constructor(
     }
 
     override fun observeNotifications(userId: String): Flow<List<Notification>> = flow {
-        // Implementar con WebSocket o polling
-        // Por ahora, emitir lista vacía
         emit(emptyList())
     }
 

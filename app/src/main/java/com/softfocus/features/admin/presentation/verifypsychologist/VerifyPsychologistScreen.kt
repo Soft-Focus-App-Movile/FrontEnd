@@ -49,6 +49,7 @@ fun VerifyPsychologistScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .padding(top = 35.dp)
     ) {
         Row(
             modifier = Modifier

@@ -10,13 +10,20 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.domain.models.EmotionalTag
@@ -53,7 +60,9 @@ fun LibraryContent(
     onContentLongClick: (ContentItem) -> Unit,
     onFavoriteClick: (ContentItem) -> Unit,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+    selectedEmotion: EmotionalTag? = null
 ) {
     when (uiState) {
         is GeneralLibraryUiState.Loading -> {
@@ -67,13 +76,42 @@ fun LibraryContent(
 
         is GeneralLibraryUiState.Success -> {
             val content = uiState.getSelectedContent()
+            var isRefreshing by remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
 
-            if (content.isEmpty()) {
-                // Mensaje cuando no hay contenido
-                Box(
-                    modifier = modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    scope.launch {
+                        isRefreshing = true
+                        onRefresh()
+                        isRefreshing = false
+                    }
+                },
+                modifier = modifier
+            ) {
+                // Weather se maneja de forma especial (no usa lista de contenido)
+                if (selectedType == ContentType.Weather) {
+                    if (uiState.weatherCondition != null) {
+                        PlacesWeatherView(
+                            weather = uiState.weatherCondition,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Cargando clima
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Green29)
+                        }
+                    }
+                } else if (content.isEmpty()) {
+                    // Mensaje cuando no hay contenido (para Movie, Music, Video)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
@@ -89,6 +127,8 @@ fun LibraryContent(
                         Text(
                             text = if (searchQuery.isNotBlank())
                                 "Intenta con otra búsqueda"
+                            else if (selectedEmotion != null)
+                                "Prueba otro filtro"
                             else if (selectedType == ContentType.Video)
                                 "Selecciona una categoría para ver videos"
                             else
@@ -98,23 +138,21 @@ fun LibraryContent(
                             textAlign = TextAlign.Center
                         )
                     }
-                }
-            } else {
-                // Renderizar contenido según tipo
-                when (selectedType) {
-                    ContentType.Video -> {
-                        LazyColumn(
-                            contentPadding = PaddingValues(vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = modifier.fillMaxSize()
-                        ) {
+                    }
+                } else {
+                    // Renderizar contenido según tipo (Movie, Music, Video)
+                    when (selectedType) {
+                        ContentType.Video -> {
+                            LazyColumn(
+                                contentPadding = PaddingValues(vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
                             items(content) { item ->
                                 VideoCard(
                                     content = item,
-                                    isFavorite = favoriteIds.contains(item.externalId),
                                     isSelected = selectedContentIds.contains(item.id),
                                     isSelectionMode = isSelectionMode,
-                                    onFavoriteClick = { onFavoriteClick(item) },
                                     onViewClick = { onContentClick(item) },
                                     onClick = { onContentClick(item) },
                                     onLongClick = if (isPsychologist) {
@@ -125,41 +163,16 @@ fun LibraryContent(
                                 )
                             }
                         }
-                    }
-                    ContentType.Weather -> {
-                        // Vista simple de clima y ubicación
-                        Box(
-                            modifier = modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = "☀️ Clima",
-                                    style = SourceSansSemiBold.copy(fontSize = 32.sp),
-                                    color = Green29
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = "Información del clima en tu ubicación actual",
-                                    style = SourceSansRegular.copy(fontSize = 16.sp),
-                                    color = Gray828,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
                         }
-                    }
-                    else -> {
-                        // Grid para Movies y Music
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = modifier.fillMaxSize()
-                        ) {
+                        ContentType.Movie, ContentType.Music -> {
+                            // Grid para Movies y Music
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
                             items(content) { item ->
                                 ContentCard(
                                     content = item,
@@ -177,6 +190,11 @@ fun LibraryContent(
                             }
                         }
                     }
+                    ContentType.Weather -> {
+                        // Weather ya se maneja arriba, esto no debería ejecutarse nunca
+                        // pero Kotlin requiere que el when sea exhaustivo
+                    }
+                }
                 }
             }
         }

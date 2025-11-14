@@ -50,6 +50,13 @@ fun CheckInFormScreen(
     LaunchedEffect(formState, emotionalCalendarFormState) {
         if (formState is CheckInFormState.Success &&
             emotionalCalendarFormState is EmotionalCalendarFormState.Success) {
+
+            // AGREGAR: Refrescar datos antes de navegar
+            viewModel.refreshData()
+
+            // AGREGAR: Pequeño delay para asegurar que los datos se actualicen
+            kotlinx.coroutines.delay(500)
+
             onNavigateToDiary?.invoke() ?: onNavigateBack()
             viewModel.resetCheckInFormState()
             viewModel.resetEmotionalCalendarFormState()
@@ -125,7 +132,7 @@ fun CheckInFormScreen(
                         onSkip = { currentStep++ }
                     )
                     3 -> SymptomsSelectionStep(
-                        symptoms = emptyList(), // Ya no se usa
+                        symptoms = emptyList(), // Ya no se usa, la lista está dentro del componente
                         selectedSymptoms = selectedSymptoms,
                         onSymptomsSelected = { selectedSymptoms = it },
                         onNext = { currentStep++ }

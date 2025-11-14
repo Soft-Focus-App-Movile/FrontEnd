@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.softfocus.features.home.presentation.general.RecommendationsState
+import com.softfocus.features.library.assignments.domain.repositories.AssignmentsRepository
+import com.softfocus.features.library.assignments.presentation.AssignmentsUiState
 import com.softfocus.features.library.domain.models.ContentItem
 import com.softfocus.features.library.domain.models.ContentType
 import com.softfocus.features.library.domain.repositories.LibraryRepository
@@ -14,11 +16,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class PatientHomeViewModel(
     private val libraryRepository: LibraryRepository,
     private val therapyRepository: TherapyRepository,
-    private val searchRepository: SearchRepository
+    private val searchRepository: SearchRepository,
+    private val assignmentsRepository: AssignmentsRepository
 ) : ViewModel() {
 
     companion object {
@@ -34,12 +39,16 @@ class PatientHomeViewModel(
     private val _therapistState = MutableStateFlow<TherapistState>(TherapistState.Loading)
     val therapistState: StateFlow<TherapistState> = _therapistState.asStateFlow()
 
+    private val _assignmentsState = MutableStateFlow<AssignmentsUiState>(AssignmentsUiState.Loading)
+    val assignmentsState: StateFlow<AssignmentsUiState> = _assignmentsState.asStateFlow()
+
     private var currentKeywordIndex = 0
     private val allContent = mutableListOf<ContentItem>()
 
     init {
         loadRecommendations()
         loadTherapistInfo()
+        loadAssignments()
     }
 
     private fun loadTherapistInfo() {
@@ -58,7 +67,28 @@ class PatientHomeViewModel(
 
                         psychologistResult.onSuccess { psychologist ->
                             Log.d(TAG, "loadTherapistInfo: ✅ Psicólogo cargado: ${psychologist.fullName}")
-                            _therapistState.value = TherapistState.Success(psychologist)
+
+                            // Cargar el último mensaje recibido
+                            val lastMessageResult = therapyRepository.getLastReceivedMessage()
+
+                            lastMessageResult.onSuccess { chatMessage ->
+                                if (chatMessage != null) {
+                                    val formattedTime = formatMessageTime(chatMessage.timestamp)
+                                    Log.d(TAG, "loadTherapistInfo: ✅ Último mensaje: ${chatMessage.content}")
+                                    _therapistState.value = TherapistState.Success(
+                                        psychologist = psychologist,
+                                        lastMessage = chatMessage.content,
+                                        lastMessageTime = formattedTime
+                                    )
+                                } else {
+                                    Log.d(TAG, "loadTherapistInfo: No hay mensajes aún")
+                                    _therapistState.value = TherapistState.Success(psychologist)
+                                }
+                            }.onFailure { error ->
+                                Log.w(TAG, "loadTherapistInfo: ⚠️ Error al cargar último mensaje: ${error.message}")
+                                // Aún así mostramos el psicólogo aunque falle el mensaje
+                                _therapistState.value = TherapistState.Success(psychologist)
+                            }
                         }.onFailure { error ->
                             Log.e(TAG, "loadTherapistInfo: ❌ Error al cargar psicólogo: ${error.message}")
                             _therapistState.value = TherapistState.Error(error.message ?: "Error al cargar datos del terapeuta")
@@ -155,11 +185,55 @@ class PatientHomeViewModel(
     fun retryTherapist() {
         loadTherapistInfo()
     }
+
+    private fun loadAssignments() {
+        viewModelScope.launch {
+            _assignmentsState.value = AssignmentsUiState.Loading
+
+            assignmentsRepository.getAssignedContent(completed = false).fold(
+                onSuccess = { assignments ->
+                    val pending = assignments.count { !it.isCompleted }
+                    val completedCount = assignments.count { it.isCompleted }
+
+                    _assignmentsState.value = AssignmentsUiState.Success(
+                        assignments = assignments,
+                        pendingCount = pending,
+                        completedCount = completedCount
+                    )
+                },
+                onFailure = { exception ->
+                    _assignmentsState.value = AssignmentsUiState.Error(
+                        message = exception.message ?: "Error al cargar asignaciones"
+                    )
+                }
+            )
+        }
+    }
+
+    fun retryAssignments() {
+        loadAssignments()
+    }
+
+    private fun formatMessageTime(timestamp: String): String {
+        return try {
+            // El timestamp viene en formato ISO-8601: "2025-01-13T17:30:00"
+            val dateTime = LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val timeFormatter = DateTimeFormatter.ofPattern("h:mma")
+            dateTime.format(timeFormatter).lowercase()
+        } catch (e: Exception) {
+            Log.w(TAG, "formatMessageTime: Error al parsear timestamp: $timestamp", e)
+            "Ahora"
+        }
+    }
 }
 
 sealed class TherapistState {
     object Loading : TherapistState()
-    data class Success(val psychologist: Psychologist) : TherapistState()
+    data class Success(
+        val psychologist: Psychologist,
+        val lastMessage: String? = null,
+        val lastMessageTime: String? = null
+    ) : TherapistState()
     object NoTherapist : TherapistState()
     data class Error(val message: String) : TherapistState()
 }

@@ -1,9 +1,9 @@
 package com.softfocus.features.notifications.domain.models
 
 enum class NotificationType {
-    INFO,           // ← Agrega este
-    ALERT,          // ← Agrega este
-    WARNING,        // ← Agrega este
+    INFO,
+    ALERT,
+    WARNING,
     EMERGENCY,
     CHECKIN_REMINDER,
     CRISIS_ALERT,

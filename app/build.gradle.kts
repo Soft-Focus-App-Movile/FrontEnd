@@ -59,7 +59,6 @@ android {
 
 dependencies {
 
-
     // Core Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -72,6 +71,16 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
+
+    // Vico
+    val vicoVersion = "1.14.0"
+    implementation("com.patrykandpatryk.vico:compose:$vicoVersion")
+    implementation("com.patrykandpatryk.vico:compose-m3:$vicoVersion")
+    implementation("com.patrykandpatryk.vico:core:$vicoVersion")
+
+    // SignalR
+    implementation("com.microsoft.signalr:signalr:7.0.5")
+    implementation("io.reactivex.rxjava3:rxjava:3.1.8")
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -90,6 +99,7 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation("io.coil-kt.coil3:coil-gif:3.3.0")
 
     implementation(libs.hilt.android)
     implementation(libs.androidx.ui.text)

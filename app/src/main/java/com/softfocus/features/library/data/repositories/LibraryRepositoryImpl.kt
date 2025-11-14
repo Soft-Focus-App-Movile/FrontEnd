@@ -120,9 +120,25 @@ class LibraryRepositoryImpl(
                 emotionFilter = emotionFilter?.name
             )
 
-            val favorites = response.map { it.toDomain() }
+            android.util.Log.d("LibraryRepo", "getFavorites - Recibidos ${response.favorites.size} favoritos del backend")
+
+            // Obtener userId del usuario actual para usarlo como fallback
+            val currentUserId = userSession.getUser()?.id
+
+            // Filtrar favoritos válidos (con todos los campos requeridos)
+            val favorites = response.favorites.mapNotNull { dto ->
+                dto.toDomain(fallbackUserId = currentUserId)?.also {
+                    android.util.Log.d("LibraryRepo", "  ✅ Favorito válido: id=${it.id}, contentId=${it.content.externalId}")
+                } ?: run {
+                    android.util.Log.w("LibraryRepo", "  ⚠️ Favorito inválido (campos null): dto=$dto")
+                    null
+                }
+            }
+
+            android.util.Log.d("LibraryRepo", "getFavorites - ${favorites.size} favoritos válidos después de filtrar")
             Result.success(favorites)
         } catch (e: Exception) {
+            android.util.Log.e("LibraryRepo", "getFavorites - Error:", e)
             Result.failure(Exception("Error al obtener favoritos: ${e.message}", e))
         }
     }
@@ -137,26 +153,80 @@ class LibraryRepositoryImpl(
                 contentType = contentType.name
             )
 
+            android.util.Log.d("LibraryRepo", "addFavorite - Request:")
+            android.util.Log.d("LibraryRepo", "  contentId: $contentId")
+            android.util.Log.d("LibraryRepo", "  contentType: ${contentType.name}")
+
             val response = favoritesService.addFavorite(
                 token = getAuthToken(),
                 request = request
             )
 
-            Result.success(response.toDomain())
+            android.util.Log.d("LibraryRepo", "addFavorite - Response raw:")
+            android.util.Log.d("LibraryRepo", "  id: ${response.id}")
+            android.util.Log.d("LibraryRepo", "  userId: ${response.userId}")
+            android.util.Log.d("LibraryRepo", "  content: ${response.content}")
+            android.util.Log.d("LibraryRepo", "  addedAt: ${response.addedAt}")
+
+            // Obtener userId del usuario actual para usarlo como fallback
+            val currentUserId = userSession.getUser()?.id
+
+            val favorite = response.toDomain(fallbackUserId = currentUserId)
+            if (favorite == null) {
+                // El backend respondió exitosamente (200/201) pero sin el objeto completo
+                // Esto es OK según la documentación del backend que solo devuelve:
+                // { "message": "Contenido añadido a favoritos" }
+                android.util.Log.d("LibraryRepo", "addFavorite - Backend respondió con éxito pero sin objeto completo")
+
+                // La operación fue exitosa en el backend
+                // Retornamos un favorito temporal - el optimistic update ya pintó el corazón
+                // La próxima sincronización con getFavorites obtendrá el objeto real
+                return Result.success(
+                    Favorite(
+                        id = "temp-${System.currentTimeMillis()}",
+                        userId = userSession.getUser()?.id ?: "",
+                        content = com.softfocus.features.library.domain.models.ContentItem(
+                            id = contentId,
+                            externalId = contentId,
+                            type = contentType,
+                            title = "Agregado a favoritos"
+                        ),
+                        addedAt = java.time.LocalDateTime.now()
+                    )
+                )
+            }
+
+            android.util.Log.d("LibraryRepo", "addFavorite - Response exitosa: favoriteId=${favorite.id}")
+            Result.success(favorite)
         } catch (e: Exception) {
+            android.util.Log.e("LibraryRepo", "addFavorite - Error completo:", e)
+            if (e is retrofit2.HttpException) {
+                android.util.Log.e("LibraryRepo", "  HTTP Code: ${e.code()}")
+                android.util.Log.e("LibraryRepo", "  HTTP Message: ${e.message()}")
+                try {
+                    val errorBody = e.response()?.errorBody()?.string()
+                    android.util.Log.e("LibraryRepo", "  Error Body: $errorBody")
+                } catch (ex: Exception) {
+                    android.util.Log.e("LibraryRepo", "  No se pudo leer error body")
+                }
+            }
             Result.failure(Exception("Error al agregar favorito: ${e.message}", e))
         }
     }
 
     override suspend fun deleteFavorite(favoriteId: String): Result<Unit> {
         return try {
+            android.util.Log.d("LibraryRepo", "deleteFavorite - favoriteId: $favoriteId")
+
             favoritesService.deleteFavorite(
                 token = getAuthToken(),
                 favoriteId = favoriteId
             )
 
+            android.util.Log.d("LibraryRepo", "deleteFavorite - Favorito eliminado exitosamente")
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("LibraryRepo", "deleteFavorite - Error:", e)
             Result.failure(Exception("Error al eliminar favorito: ${e.message}", e))
         }
     }
@@ -174,7 +244,7 @@ class LibraryRepositoryImpl(
                 completed = completed
             )
 
-            val assignments = response.map { it.toDomain() }
+            val assignments = response.assignments.map { it.toDomain() }
             Result.success(assignments)
         } catch (e: Exception) {
             Result.failure(Exception("Error al obtener asignaciones: ${e.message}", e))
@@ -234,7 +304,10 @@ class LibraryRepositoryImpl(
                 patientId = patientId
             )
 
-            val assignments = response.map { it.toDomain() }
+            // Obtener el ID del psicólogo logueado para inyectarlo en los DTOs
+            val currentPsychologistId = userSession.getUser()?.id
+
+            val assignments = response.assignments.map { it.toDomain(currentPsychologistId) }
             Result.success(assignments)
         } catch (e: Exception) {
             Result.failure(Exception("Error al obtener asignaciones del psicólogo: ${e.message}", e))

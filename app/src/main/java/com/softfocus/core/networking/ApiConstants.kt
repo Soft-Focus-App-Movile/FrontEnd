@@ -40,6 +40,7 @@ object ApiConstants {
         const val PSYCHOLOGIST_PROFESSIONAL_DATA = "users/psychologist/professional"
         const val PSYCHOLOGIST_VERIFICATION = "users/psychologist/verification"
         const val PSYCHOLOGIST_STATS = "users/psychologist/stats"
+        const val PSYCHOLOGIST_PATIENT = "users/psychologist/patient/{id}"
 
         // Public psychologist directory endpoints
         const val PSYCHOLOGISTS_DIRECTORY = "users/psychologists/directory"
@@ -54,8 +55,20 @@ object ApiConstants {
     // Therapy endpoints
     object Therapy {
         const val MY_RELATIONSHIP = "therapy/my-relationship"
+
+        const val GET_PATIENT_RELATIONSHIP = "therapy/relationship-with/{patientId}"
         const val CONNECT = "therapy/connect"
         const val PATIENTS = "therapy/patients"
+        const val DISCONNECT = "therapy/disconnect/{relationshipId}"
+
+        fun disconnect(relationshipId: String) = DISCONNECT.replace("{relationshipId}", relationshipId)
+    }
+
+    object Chat {
+        const val HISTORY = "chat/history"
+        const val SEND = "chat/send"
+
+        const val LAST_MESSAGE = "chat/last-received"
     }
 
     // AI endpoints
@@ -76,6 +89,7 @@ object ApiConstants {
         const val CHECK_INS = "tracking/check-ins"
         const val CHECK_IN_BY_ID = "tracking/check-ins/{id}"
         const val CHECK_IN_TODAY = "tracking/check-ins/today"
+        const val PATIENT_CHECK_INS_HISTORY = "tracking/check-ins/patient/{userId}"
 
         // Emotional Calendar
         const val EMOTIONAL_CALENDAR = "tracking/emotional-calendar"
@@ -133,7 +147,6 @@ object ApiConstants {
         const val SEARCH = "library/search"
         const val CONTENT_BY_ID = "library/{contentId}"
 
-        // Favorites endpoints (General and Patient only)
         const val FAVORITES = "library/favorites"
         const val FAVORITE_BY_ID = "library/favorites/{favoriteId}"
 
@@ -150,10 +163,22 @@ object ApiConstants {
         const val RECOMMEND_CONTENT = "library/recommendations/content"
         const val RECOMMEND_BY_EMOTION = "library/recommendations/emotion/{emotion}"
 
-        // Helper functions for dynamic parameters
         fun getContentById(contentId: String) = CONTENT_BY_ID.replace("{contentId}", contentId)
         fun deleteFavorite(favoriteId: String) = FAVORITE_BY_ID.replace("{favoriteId}", favoriteId)
         fun completeAssignment(assignmentId: String) = COMPLETE_ASSIGNMENT.replace("{assignmentId}", assignmentId)
         fun recommendByEmotion(emotion: String) = RECOMMEND_BY_EMOTION.replace("{emotion}", emotion)
+    }
+
+    object Subscription {
+        const val ME = "subscriptions/me"
+        const val USAGE = "subscriptions/usage"
+        const val CHECK_ACCESS = "subscriptions/check-access/{featureType}"
+        const val UPGRADE_CHECKOUT = "subscriptions/upgrade/checkout"
+        const val CHECKOUT_SUCCESS = "subscriptions/checkout/success"
+        const val CANCEL = "subscriptions/cancel"
+        const val TRACK_USAGE = "subscriptions/track-usage"
+        const val INITIALIZE = "subscriptions/initialize"
+
+        fun checkAccess(featureType: String) = CHECK_ACCESS.replace("{featureType}", featureType)
     }
 }

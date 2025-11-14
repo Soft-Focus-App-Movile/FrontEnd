@@ -37,5 +37,5 @@ interface ProfileRepository {
         paymentMethods: String?,
         isProfileVisibleInDirectory: Boolean?,
         allowsDirectMessages: Boolean?
-    ): Result<PsychologistProfile>
+    ): Result<Unit>
 }

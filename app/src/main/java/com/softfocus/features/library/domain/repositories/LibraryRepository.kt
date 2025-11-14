@@ -56,12 +56,6 @@ interface LibraryRepository {
         contentType: ContentType
     ): Result<Favorite>
 
-    /**
-     * Elimina un contenido de favoritos
-     *
-     * @param favoriteId ID del favorito a eliminar
-     * @return Result indicando éxito o error
-     */
     suspend fun deleteFavorite(
         favoriteId: String
     ): Result<Unit>

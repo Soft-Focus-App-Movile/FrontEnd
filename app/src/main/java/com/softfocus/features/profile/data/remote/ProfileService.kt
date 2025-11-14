@@ -2,6 +2,7 @@ package com.softfocus.features.profile.data.remote
 
 import com.softfocus.core.networking.ApiConstants
 import com.softfocus.features.profile.data.models.response.ProfileResponseDto
+import com.softfocus.features.profile.data.models.response.ProfessionalProfileResponseDto
 import com.softfocus.features.profile.data.models.response.PsychologistCompleteProfileResponseDto
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -45,5 +46,5 @@ interface ProfileService {
     @PUT(ApiConstants.Users.PSYCHOLOGIST_PROFESSIONAL_DATA)
     suspend fun updateProfessionalProfile(
         @Body professionalData: Map<String, @JvmSuppressWildcards Any?>
-    ): Response<PsychologistCompleteProfileResponseDto>
+    ): Response<ProfessionalProfileResponseDto>
 }

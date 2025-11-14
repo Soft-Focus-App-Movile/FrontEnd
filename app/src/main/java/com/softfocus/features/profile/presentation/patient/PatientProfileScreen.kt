@@ -1,5 +1,6 @@
 package com.softfocus.features.profile.presentation.patient
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +42,12 @@ import com.softfocus.ui.theme.ButtonPrimary
 import com.softfocus.R
 import java.net.URL
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.navigation.NavHostController
+import com.softfocus.core.navigation.Route
+import com.softfocus.features.profile.presentation.ProfileUiState
+import com.softfocus.features.profile.presentation.PsychologistLoadState
 import com.softfocus.ui.components.ProfileAvatar
 import com.softfocus.ui.theme.Blue77
 import com.softfocus.ui.theme.RedE8
@@ -59,15 +66,116 @@ fun PatientProfileScreen(
     onNavigateToEditProfile: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToNotifications: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
+    onNavigateToHelpSupport: () -> Unit = {},
+    onNavigateToMyPlan: () -> Unit = {},
     onLogout: () -> Unit = {},
+    navController: NavHostController,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val user by viewModel.user.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val assignedPsychologist by viewModel.assignedPsychologist.collectAsState()
     val psychologistLoadState by viewModel.psychologistLoadState.collectAsState()
+    var showDisconnectDialog by remember { mutableStateOf(false) }
 
-    if (uiState is com.softfocus.features.profile.presentation.ProfileUiState.Loading) {
+    // Mostrar mensaje de error si ocurre
+    LaunchedEffect(uiState) {
+        if (uiState is ProfileUiState.Error) {
+            val message = (uiState as ProfileUiState.Error).message
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Diálogo de confirmación de desvinculación
+    if (showDisconnectDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisconnectDialog = false },
+            title = {
+                Text(
+                    text = "Desvincular Terapeuta",
+                    style = CrimsonSemiBold,
+                    fontSize = 20.sp,
+                    color = Black,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "¿Estás seguro de que deseas desvincularte de tu terapeuta?",
+                        style = SourceSansRegular,
+                        fontSize = 16.sp,
+                        color = Black,
+                        lineHeight = 22.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = "Esta acción no se puede deshacer.",
+                        style = SourceSansRegular,
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDisconnectDialog = false
+                        viewModel.disconnectPsychologist(
+                            onSuccess = {
+                                Toast.makeText(
+                                    context,
+                                    "Terapeuta desvinculado exitosamente",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                // Navegar a la vista de conexión (General Home)
+                                onNavigateToConnect()
+                            }
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RedE8
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Text(
+                        text = "Confirmar",
+                        color = White,
+                        style = SourceSansBold,
+                        fontSize = 14.sp
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDisconnectDialog = false },
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Cancelar",
+                        color = Black,
+                        style = SourceSansBold,
+                        fontSize = 14.sp
+                    )
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = White,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+
+    if (uiState is ProfileUiState.Loading) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -84,18 +192,9 @@ fun PatientProfileScreen(
                     Text(
                         text = "Editar información Personal",
                         style = CrimsonSemiBold,
-                        fontSize = 20.sp,
-                        color = Black
+                        fontSize = 25.sp,
+                        color = GreenA3
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = Color.Black
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White
@@ -168,23 +267,25 @@ fun PatientProfileScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             when (psychologistLoadState) {
-                is com.softfocus.features.profile.presentation.PsychologistLoadState.Success -> {
+                is PsychologistLoadState.Success -> {
                     assignedPsychologist?.let { psychologist ->
                         CurrentTherapistCard(
                             therapistName = psychologist.fullName,
                             therapistImageUrl = psychologist.profileImageUrl,
-                            onUnlinkClick = onNavigateToConnect
+                            onUnlinkClick = { showDisconnectDialog = true },
+                            navController = navController
                         )
                     }
                 }
-                is com.softfocus.features.profile.presentation.PsychologistLoadState.Loading -> {
+                is PsychologistLoadState.Loading -> {
                     CurrentTherapistCard(
                         therapistName = "Cargando...",
                         therapistImageUrl = null,
-                        onUnlinkClick = onNavigateToConnect
+                        onUnlinkClick = onNavigateToConnect,
+                        navController = navController
                     )
                 }
-                is com.softfocus.features.profile.presentation.PsychologistLoadState.NoTherapist -> {
+                is PsychologistLoadState.NoTherapist -> {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -209,7 +310,7 @@ fun PatientProfileScreen(
                         }
                     }
                 }
-                is com.softfocus.features.profile.presentation.PsychologistLoadState.Error -> {
+                is PsychologistLoadState.Error -> {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -261,22 +362,17 @@ fun PatientProfileScreen(
                 onClick = onNavigateToNotifications
             )
 
-            ProfileOptionDrawable(
-                iconRes = R.drawable.ic_subscription_plan,
-                title = "Mi plan",
-                onClick = { }
-            )
 
             ProfileOptionDrawable(
                 iconRes = R.drawable.ic_policy_privacy,
                 title = "Política de Privacidad",
-                onClick = { }
+                onClick = onNavigateToPrivacyPolicy
             )
 
             ProfileOptionDrawable(
                 iconRes = R.drawable.ic_help_support,
                 title = "Ayuda y Soporte",
-                onClick = { }
+                onClick = onNavigateToHelpSupport
             )
 
             ProfileOption(
@@ -294,7 +390,8 @@ fun PatientProfileScreen(
 fun CurrentTherapistCard(
     therapistName: String,
     therapistImageUrl: String?,
-    onUnlinkClick: () -> Unit
+    onUnlinkClick: () -> Unit,
+    navController: NavHostController
 ) {
     Card(
         modifier = Modifier
@@ -356,7 +453,9 @@ fun CurrentTherapistCard(
                         fontSize = 13.sp,
                         color = Blue77,
                         modifier = Modifier.clickable {
-                            // TODO: Dejar vacío o implementar la lógica de clic
+                            navController.navigate(
+                                Route.PsychologistChatProfile.path
+                            )
                         }
                     )
                 }
@@ -487,7 +586,7 @@ fun AsyncImageLoader(
     imageUrl: String,
     modifier: Modifier = Modifier
 ) {
-    var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(imageUrl) {
         withContext(Dispatchers.IO) {
@@ -523,6 +622,7 @@ private fun calculateAge(dateOfBirth: String): Int? {
     }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun PatientProfileScreenPreview() {
@@ -581,7 +681,8 @@ fun PatientProfileScreenPreview() {
         CurrentTherapistCard(
             therapistName = "Dra. Herrera",
             therapistImageUrl = null,
-            onUnlinkClick = { }
+            onUnlinkClick = { },
+            navController = navController
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -631,3 +732,4 @@ fun PatientProfileScreenPreview() {
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
+*/

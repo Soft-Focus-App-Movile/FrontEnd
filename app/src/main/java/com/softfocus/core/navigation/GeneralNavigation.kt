@@ -68,8 +68,17 @@ fun NavGraphBuilder.generalNavigation(
                         onNavigateToEditProfile = {
                             navController.navigate(Route.EditProfile.path)
                         },
-                        onNavigateToNotifications = { // ← AGREGAR ESTAS 3 LÍNEAS
+                        onNavigateToNotifications = {
                             navController.navigate(Route.NotificationPreferences.path)
+                        },
+                        onNavigateToPrivacyPolicy = {
+                            navController.navigate(Route.PrivacyPolicy.path)
+                        },
+                        onNavigateToHelpSupport = {
+                            navController.navigate(Route.HelpSupport.path)
+                        },
+                        onNavigateToMyPlan = {
+                            navController.navigate(Route.MyPlan.path)
                         },
                         onLogout = {
                             SessionManager.logout(context)
@@ -198,6 +207,33 @@ fun NavGraphBuilder.generalNavigation(
                                     Toast.makeText(context, "Contenido no disponible para visualización", Toast.LENGTH_SHORT).show()
                                 }
                             }
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    composable(Route.MyPlan.path) {
+        val homeViewModel = remember { TherapyPresentationModule.getHomeViewModel(context) }
+        val isLoading = homeViewModel.isLoading.collectAsState()
+
+        if (isLoading.value) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF6B8E6F))
+            }
+        } else {
+            Scaffold(
+                containerColor = Color.Transparent,
+                bottomBar = { GeneralBottomNav(navController) }
+            ) { paddingValues ->
+                Box(modifier = Modifier.padding(paddingValues)) {
+                    com.softfocus.features.subscription.presentation.MyPlanScreen(
+                        onNavigateBack = {
+                            navController.popBackStack()
                         }
                     )
                 }

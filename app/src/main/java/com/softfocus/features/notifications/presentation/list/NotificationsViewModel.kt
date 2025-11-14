@@ -1,33 +1,31 @@
 package com.softfocus.features.notifications.presentation.list
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.softfocus.core.data.local.UserSession
+import com.softfocus.features.auth.domain.models.UserType
+import com.softfocus.features.notifications.presentation.list.NotificationsState
 import com.softfocus.features.notifications.domain.models.DeliveryStatus
 import com.softfocus.features.notifications.domain.models.Notification
+import com.softfocus.features.notifications.domain.models.NotificationType
+import com.softfocus.features.notifications.domain.models.Priority
 import com.softfocus.features.notifications.domain.usecases.GetNotificationsUseCase
 import com.softfocus.features.notifications.domain.usecases.MarkAsReadUseCase
+import com.softfocus.features.notifications.domain.usecases.GetNotificationPreferencesUseCase
 import com.softfocus.features.notifications.domain.repositories.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 import javax.inject.Inject
-
-data class NotificationsState(
-    val notifications: List<Notification> = emptyList(),
-    val isLoading: Boolean = false,
-    val isRefreshing: Boolean = false,
-    val error: String? = null,
-    val unreadCount: Int = 0
-)
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val getNotificationsUseCase: GetNotificationsUseCase,
     private val markAsReadUseCase: MarkAsReadUseCase,
+    private val getPreferencesUseCase: GetNotificationPreferencesUseCase,
     private val notificationRepository: NotificationRepository,
     private val userSession: UserSession
 ) : ViewModel() {
@@ -36,7 +34,7 @@ class NotificationsViewModel @Inject constructor(
     val state: StateFlow<NotificationsState> = _state.asStateFlow()
 
     private var currentFilter: DeliveryStatus? = null
-    private var allNotifications = listOf<Notification>() // ← NUEVO: Guardar todas las notificaciones
+    private var allNotifications = listOf<Notification>()
 
     init {
         loadNotifications()
@@ -48,6 +46,8 @@ class NotificationsViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             val userId = userSession.getUser()?.id
+            val userType = userSession.getUser()?.userType
+
             if (userId == null) {
                 _state.value = _state.value.copy(
                     isLoading = false,
@@ -56,17 +56,30 @@ class NotificationsViewModel @Inject constructor(
                 return@launch
             }
 
-            // Siempre cargar TODAS las notificaciones sin filtro
-            val result = getNotificationsUseCase(
-                userId = userId,
-                status = null // ← Cambia esto: siempre cargar sin filtro
-            )
+            val preferencesResult = getPreferencesUseCase(userId)
+            val masterPreference = preferencesResult.getOrNull()?.firstOrNull()
+            val notificationsEnabled = masterPreference?.isEnabled ?: true
+            val schedule = masterPreference?.schedule
+            val disabledAt = masterPreference?.disabledAt
+
+            val result = getNotificationsUseCase(userId = userId, status = null)
 
             result.fold(
                 onSuccess = { notifications ->
-                    allNotifications = notifications // ← Guardar todas
-                    applyFilter() // ← Aplicar filtro actual
-                    _state.value = _state.value.copy(isLoading = false)
+                    allNotifications = notifications
+
+                    if (!notificationsEnabled && disabledAt != null) {
+                        allNotifications = notifications.filter {
+                            it.createdAt.isBefore(disabledAt) || it.createdAt.isEqual(disabledAt)
+                        }
+                    }
+
+                    _state.value = _state.value.copy(
+                        notificationsEnabled = notificationsEnabled,
+                        isLoading = false
+                    )
+
+                    applyFilter(userType, notificationsEnabled, schedule)
                 },
                 onFailure = { error ->
                     _state.value = _state.value.copy(
@@ -78,47 +91,86 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    // NUEVA FUNCIÓN: Aplicar filtro a todas las notificaciones
-    private fun applyFilter() {
-        val filtered = when (currentFilter) {
-            DeliveryStatus.DELIVERED -> allNotifications.filter {
-                it.readAt == null // "No leídas" = cualquier notificación sin readAt
-            }
+    private fun applyFilter(
+        userType: UserType? = null,
+        notificationsEnabled: Boolean = _state.value.notificationsEnabled,
+        schedule: com.softfocus.features.notifications.domain.models.NotificationSchedule? = null
+    ) {
+        val currentUserType = userType ?: userSession.getUser()?.userType
+
+        var filtered = when (currentFilter) {
+            DeliveryStatus.DELIVERED -> allNotifications.filter { it.readAt == null }
             else -> allNotifications
         }
+
+        if (notificationsEnabled && currentUserType == UserType.PSYCHOLOGIST && schedule != null) {
+            val now = LocalTime.now()
+            val startTime = schedule.startTime
+            val endTime = schedule.endTime
+
+            val isWithinSchedule = if (endTime.isAfter(startTime)) {
+                now.isAfter(startTime) && now.isBefore(endTime)
+            } else {
+                now.isAfter(startTime) || now.isBefore(endTime)
+            }
+
+            if (!isWithinSchedule) {
+                filtered = filtered.filter { notification ->
+                    val wasAlreadyRead = notification.readAt != null
+                    val isCritical = notification.type == NotificationType.CRISIS_ALERT ||
+                            notification.type == NotificationType.EMERGENCY ||
+                            notification.priority == Priority.CRITICAL ||
+                            notification.priority == Priority.HIGH
+
+                    wasAlreadyRead || isCritical
+                }
+            }
+        }
+
         _state.value = _state.value.copy(notifications = filtered)
     }
 
     fun filterNotifications(status: DeliveryStatus?) {
         currentFilter = status
-        applyFilter() // ← Cambia esto: en lugar de recargar, solo aplicar filtro
+
+        viewModelScope.launch {
+            val userId = userSession.getUser()?.id ?: return@launch
+            val userType = userSession.getUser()?.userType
+
+            val preferencesResult = getPreferencesUseCase(userId)
+            val masterPreference = preferencesResult.getOrNull()?.firstOrNull()
+            val schedule = masterPreference?.schedule
+
+            applyFilter(userType, _state.value.notificationsEnabled, schedule)
+        }
     }
 
     fun markAsRead(notificationId: String) {
         viewModelScope.launch {
-            println("🔵 [VIEWMODEL] Marcando como leída: $notificationId")
-
             markAsReadUseCase(notificationId).fold(
                 onSuccess = {
-                    println("✅ [VIEWMODEL] Marcado como leída exitosamente en backend")
-
-                    // Actualizar localmente
                     allNotifications = allNotifications.map { notification ->
                         if (notification.id == notificationId) {
                             notification.copy(
                                 status = DeliveryStatus.READ,
-                                readAt = java.time.LocalDateTime.now() // ← Agregar esta línea
+                                readAt = java.time.LocalDateTime.now()
                             )
                         } else {
                             notification
                         }
                     }
-                    applyFilter()
+
+                    val userId = userSession.getUser()?.id
+                    val userType = userSession.getUser()?.userType
+                    if (userId != null) {
+                        val preferencesResult = getPreferencesUseCase(userId)
+                        val schedule = preferencesResult.getOrNull()?.firstOrNull()?.schedule
+                        applyFilter(userType, _state.value.notificationsEnabled, schedule)
+                    }
+
                     loadUnreadCount()
                 },
-                onFailure = { error ->
-                    println("❌ [VIEWMODEL] Error al marcar como leída: ${error.message}")
-                }
+                onFailure = { }
             )
         }
     }
@@ -126,34 +178,44 @@ class NotificationsViewModel @Inject constructor(
     fun markAllAsRead() {
         viewModelScope.launch {
             val userId = userSession.getUser()?.id ?: return@launch
+            val userType = userSession.getUser()?.userType
 
             notificationRepository.markAllAsRead(userId).fold(
                 onSuccess = {
-                    // Actualizar TODAS localmente
                     allNotifications = allNotifications.map { notification ->
                         notification.copy(
                             status = DeliveryStatus.READ,
-                            readAt = notification.readAt ?: java.time.LocalDateTime.now() // ← Agregar esta línea
+                            readAt = notification.readAt ?: java.time.LocalDateTime.now()
                         )
                     }
-                    applyFilter() // ← Re-aplicar filtro
+
+                    val preferencesResult = getPreferencesUseCase(userId)
+                    val schedule = preferencesResult.getOrNull()?.firstOrNull()?.schedule
+                    applyFilter(userType, _state.value.notificationsEnabled, schedule)
+
                     loadUnreadCount()
                 },
-                onFailure = { /* Ignorar error */ }
+                onFailure = { }
             )
         }
     }
 
     fun deleteNotification(notificationId: String) {
         viewModelScope.launch {
+            val userId = userSession.getUser()?.id ?: return@launch
+            val userType = userSession.getUser()?.userType
+
             notificationRepository.deleteNotification(notificationId).fold(
                 onSuccess = {
-                    // Actualizar TODAS las notificaciones
                     allNotifications = allNotifications.filter { it.id != notificationId }
-                    applyFilter() // ← Re-aplicar filtro
+
+                    val preferencesResult = getPreferencesUseCase(userId)
+                    val schedule = preferencesResult.getOrNull()?.firstOrNull()?.schedule
+                    applyFilter(userType, _state.value.notificationsEnabled, schedule)
+
                     loadUnreadCount()
                 },
-                onFailure = { /* Ignorar error */ }
+                onFailure = { }
             )
         }
     }
@@ -164,19 +226,26 @@ class NotificationsViewModel @Inject constructor(
 
             notificationRepository.getUnreadCount(userId).fold(
                 onSuccess = { count ->
-                    _state.value = _state.value.copy(unreadCount = count)
+                    val finalCount = if (_state.value.notificationsEnabled) count else 0
+                    _state.value = _state.value.copy(unreadCount = finalCount)
                 },
-                onFailure = { /* Ignorar error */ }
+                onFailure = { }
             )
         }
     }
 
     fun refreshNotifications() {
         viewModelScope.launch {
-            println("🔄 [VIEWMODEL] Refresh manual iniciado")
             _state.value = _state.value.copy(isRefreshing = true, error = null)
 
             val userId = userSession.getUser()?.id ?: return@launch
+            val userType = userSession.getUser()?.userType
+
+            val preferencesResult = getPreferencesUseCase(userId)
+            val masterPreference = preferencesResult.getOrNull()?.firstOrNull()
+            val notificationsEnabled = masterPreference?.isEnabled ?: true
+            val schedule = masterPreference?.schedule
+            val disabledAt = masterPreference?.disabledAt
 
             val result = notificationRepository.getNotifications(
                 userId = userId,
@@ -187,24 +256,22 @@ class NotificationsViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { notifications ->
-                    println("✅ [VIEWMODEL] Refresh exitoso: ${notifications.size} notificaciones")
+                    allNotifications = notifications
 
-                    // DEBUG: Mostrar todas las notificaciones con sus estados
-                    notifications.forEach { notification ->
-                        println("🔍 [VIEWMODEL] Notificación: ${notification.id}")
-                        println("   📝 Title: ${notification.title}")
-                        println("   📊 Status: ${notification.status}")
-                        println("   📖 ReadAt: ${notification.readAt}")
-                        println("   🕒 CreatedAt: ${notification.createdAt}")
+                    if (!notificationsEnabled && disabledAt != null) {
+                        allNotifications = notifications.filter {
+                            it.createdAt.isBefore(disabledAt) || it.createdAt.isEqual(disabledAt)
+                        }
                     }
 
-                    allNotifications = notifications
-                    applyFilter()
-                    _state.value = _state.value.copy(isRefreshing = false)
+                    _state.value = _state.value.copy(
+                        notificationsEnabled = notificationsEnabled,
+                        isRefreshing = false
+                    )
+                    applyFilter(userType, notificationsEnabled, schedule)
                     loadUnreadCount()
                 },
                 onFailure = { error ->
-                    println("❌ [VIEWMODEL] Error en refresh: ${error.message}")
                     _state.value = _state.value.copy(
                         isRefreshing = false,
                         error = error.message ?: "Error al actualizar"

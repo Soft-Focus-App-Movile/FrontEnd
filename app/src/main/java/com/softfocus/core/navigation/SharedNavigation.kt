@@ -36,6 +36,7 @@ import com.softfocus.features.psychologist.presentation.di.PsychologistPresentat
 import com.softfocus.features.search.presentation.detail.PsychologistDetailScreen
 import com.softfocus.features.search.presentation.search.SearchPsychologistScreen
 import com.softfocus.features.therapy.presentation.di.TherapyPresentationModule
+import com.softfocus.features.therapy.domain.models.PatientDirectory
 import com.softfocus.features.tracking.presentation.screens.CheckInFormScreen
 import com.softfocus.features.tracking.presentation.screens.DiaryScreen
 import com.softfocus.features.tracking.presentation.screens.ProgressScreen
@@ -93,8 +94,15 @@ fun NavGraphBuilder.sharedNavigation(
                             onNavigateToPatientList = {
                                 navController.navigate(Route.PsychologistPatientList.path)
                             },
-                            onNavigateToPatientDetail = { patientId ->
-                                // TODO: Implementar navegación a detalle del paciente
+                            onNavigateToPatientDetail = { patient ->
+                                navController.navigate(
+                                    Route.PsychologistPatientDetail.createRoute(
+                                        patientId = patient.patientId,
+                                        relationshipId = patient.id,
+                                        startDate = patient.startDate,
+                                        profilePhotoUrl = patient.profilePhotoUrl
+                                    )
+                                )
                             }
                         )
                     }
@@ -149,6 +157,12 @@ fun NavGraphBuilder.sharedNavigation(
                                     },
                                     onNavigateToAIChat = {
                                         navController.navigate(Route.AIWelcome.path)
+                                    },
+                                    onNavigateToCheckInForm = {  // ← AGREGAR
+                                        navController.navigate(Route.CheckInForm.path)
+                                    },
+                                    onNavigateToDiary = {  // ← AGREGAR
+                                        navController.navigate(Route.Diary.path)
                                     }
                                 )
                             }
@@ -240,6 +254,7 @@ fun NavGraphBuilder.sharedNavigation(
             ) { paddingValues ->
                 Box(modifier = Modifier.padding(paddingValues)) {
                     NotificationPreferencesScreen(
+                        userType = currentUser?.userType ?: UserType.GENERAL,
                         onNavigateBack = {
                             navController.popBackStack()
                         }
@@ -270,7 +285,8 @@ fun NavGraphBuilder.sharedNavigation(
                         onClose = { navController.popBackStack() },
                         onSessionClick = { sessionId ->
                             navController.navigate(Route.AIChat.createRoute(sessionId = sessionId))
-                        }
+                        },
+                        onNavigateToEmotionDetection = { navController.navigate(Route.EmotionDetection.path) }
                     )
                 }
             }
@@ -283,7 +299,8 @@ fun NavGraphBuilder.sharedNavigation(
                 onClose = { navController.popBackStack() },
                 onSessionClick = { sessionId ->
                     navController.navigate(Route.AIChat.createRoute(sessionId = sessionId))
-                }
+                },
+                onNavigateToEmotionDetection = { navController.navigate(Route.EmotionDetection.path) }
             )
         }
     }
@@ -323,7 +340,8 @@ fun NavGraphBuilder.sharedNavigation(
                     AIChatScreen(
                         initialMessage = decodedMessage,
                         sessionId = if (sessionId != "null") sessionId else null,
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack() },
+                        onNavigateToEmotionDetection = { navController.navigate(Route.EmotionDetection.path) }
                     )
                 }
             }
@@ -332,7 +350,8 @@ fun NavGraphBuilder.sharedNavigation(
             AIChatScreen(
                 initialMessage = decodedMessage,
                 sessionId = if (sessionId != "null") sessionId else null,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNavigateToEmotionDetection = { navController.navigate(Route.EmotionDetection.path) }
             )
         }
     }
@@ -568,6 +587,27 @@ fun NavGraphBuilder.sharedNavigation(
                 }
             }
         }
+    }
+
+    // Emotion Detection Screen
+    composable(Route.EmotionDetection.path) {
+        com.softfocus.features.ai.presentation.emotion.EmotionDetectionScreen(
+            onNavigateBack = { navController.popBackStack() }
+        )
+    }
+
+    // Privacy Policy Screen (Shared by General and Patient)
+    composable(Route.PrivacyPolicy.path) {
+        com.softfocus.features.profile.presentation.shared.PrivacyPolicyScreen(
+            onNavigateBack = { navController.popBackStack() }
+        )
+    }
+
+    // Help and Support Screen (Shared by General and Patient)
+    composable(Route.HelpSupport.path) {
+        com.softfocus.features.profile.presentation.shared.HelpSupportScreen(
+            onNavigateBack = { navController.popBackStack() }
+        )
     }
 
 }

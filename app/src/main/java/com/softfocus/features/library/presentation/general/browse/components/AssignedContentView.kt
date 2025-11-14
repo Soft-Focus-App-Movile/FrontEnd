@@ -88,10 +88,8 @@ fun AssignedContentView(
                     ContentType.Video -> {
                         VideoCard(
                             content = content,
-                            isFavorite = favoriteIds.contains(content.externalId),
                             isSelected = false,
                             isSelectionMode = false,
-                            onFavoriteClick = { onFavoriteClick(content) },
                             onViewClick = { onViewVideoClick(content) },
                             onClick = { onContentClick(content) }
                         )

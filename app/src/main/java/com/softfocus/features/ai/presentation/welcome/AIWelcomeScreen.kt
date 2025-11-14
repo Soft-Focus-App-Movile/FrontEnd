@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -90,8 +91,8 @@ class OvalBottomShape : Shape {
 
             // Draw oval bottom curve from right to left
             quadraticBezierTo(
-                size.width / 2f, size.height + 100f,  // Control point (center, below)
-                0f, size.height - 100f                 // End point (left)
+                size.width / 2f, size.height + 100f,
+                0f, size.height - 100f
             )
 
             // Close path back to start
@@ -105,7 +106,8 @@ class OvalBottomShape : Shape {
 fun AIWelcomeScreen(
     onSendMessage: (String) -> Unit,
     onClose: () -> Unit,
-    onSessionClick: (String) -> Unit = {}
+    onSessionClick: (String) -> Unit = {},
+    onNavigateToEmotionDetection: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel = remember { AIPresentationModule.getAIWelcomeViewModel(context) }
@@ -162,7 +164,7 @@ fun AIWelcomeScreen(
                 painter = painterResource(id = R.drawable.focus_ia),
                 contentDescription = "Focus Panda",
                 tint = Color.Unspecified,
-                modifier = Modifier.size(180.dp)
+                modifier = Modifier.size(190.dp)
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -179,18 +181,29 @@ fun AIWelcomeScreen(
                     )
                 },
                 trailingIcon = {
-                    IconButton(
-                        onClick = {
-                            if (message.isNotBlank()) {
-                                onSendMessage(message)
-                            }
+                    Row {
+                        IconButton(
+                            onClick = onNavigateToEmotionDetection
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = "Detectar emoción",
+                                tint = Green29
+                            )
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Enviar",
-                            tint = Green29
-                        )
+                        IconButton(
+                            onClick = {
+                                if (message.isNotBlank()) {
+                                    onSendMessage(message)
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Enviar",
+                                tint = Green29
+                            )
+                        }
                     }
                 },
                 modifier = Modifier
@@ -294,7 +307,7 @@ fun AIWelcomeScreen(
             onClick = onClose,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(16.dp)
+                .padding(35.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
@@ -360,5 +373,5 @@ private fun SessionItem(
 @Preview(showBackground = true)
 @Composable
 fun AIWelcomeScreenPreview() {
-    AIWelcomeScreen(onSendMessage = {}, onClose = {})
+    AIWelcomeScreen(onSendMessage = {}, onClose = {}, onNavigateToEmotionDetection = {})
 }
