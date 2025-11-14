@@ -8,8 +8,10 @@ import java.time.format.DateTimeFormatter
 data class ScheduleDto(
     @SerializedName("start_time")
     val startTime: String,
+
     @SerializedName("end_time")
     val endTime: String,
+
     @SerializedName("days_of_week")
     val daysOfWeek: List<Int>?
 ) {

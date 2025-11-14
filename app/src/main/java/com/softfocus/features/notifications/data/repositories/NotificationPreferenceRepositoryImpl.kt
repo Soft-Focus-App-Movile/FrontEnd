@@ -20,11 +20,26 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 val preferences = body.preferences?.map { it.toDomain() } ?: emptyList()
+
+                // ✅ Log detallado para verificar que disabled_at llegue correctamente
+                preferences.forEach { pref ->
+                    android.util.Log.d(
+                        "NotifPrefRepo",
+                        "📡 Preference ${pref.notificationType}: " +
+                                "enabled=${pref.isEnabled}, " +
+                                "disabled_at=${pref.disabledAt}, " +
+                                "schedule=${pref.schedule}"
+                    )
+                }
+
                 Result.success(preferences)
             } else {
-                Result.failure(Exception("Error al obtener preferencias: ${response.message()}"))
+                val errorMsg = "Error al obtener preferencias: ${response.code()} - ${response.message()}"
+                android.util.Log.e("NotifPrefRepo", errorMsg)
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
+            android.util.Log.e("NotifPrefRepo", "❌ Error de red al obtener preferencias", e)
             Result.failure(Exception("Error de red al obtener preferencias: ${e.message}", e))
         }
     }
@@ -49,7 +64,12 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
                     )
                 }
 
-                android.util.Log.d("NotifRepo", "Mapeando ${pref.notificationType}: schedule=${scheduleDto}")
+                android.util.Log.d(
+                    "NotifPrefRepo",
+                    "📤 Mapeando ${pref.notificationType}: " +
+                            "enabled=${pref.isEnabled}, " +
+                            "schedule=${scheduleDto}"
+                )
 
                 NotificationPreferenceDto(
                     notificationType = pref.notificationType.name
@@ -61,24 +81,39 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
                 )
             }
 
-            android.util.Log.d("NotifRepo", "Enviando al backend: ${preferenceDtos.map { "${it.notificationType}=${it.isEnabled}, schedule=${it.schedule}" }}")
+            android.util.Log.d(
+                "NotifPrefRepo",
+                "📤 Enviando al backend: ${preferenceDtos.size} preferencias"
+            )
 
             val response = notificationService.updatePreferences(
                 UpdatePreferencesRequestDto(preferenceDtos)
             )
 
-            android.util.Log.d("NotifRepo", "Response code: ${response.code()}")
+            android.util.Log.d("NotifPrefRepo", "📡 Response code: ${response.code()}")
 
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 val updatedPreferences = body.preferences?.map { it.toDomain() } ?: emptyList()
-                android.util.Log.d("NotifRepo", "Preferencias recibidas: ${updatedPreferences.map { "${it.notificationType}=${it.isEnabled}, schedule=${it.schedule}" }}")
+
+                // ✅ Log de respuesta con disabled_at
+                updatedPreferences.forEach { pref ->
+                    android.util.Log.d(
+                        "NotifPrefRepo",
+                        "📥 Updated ${pref.notificationType}: " +
+                                "enabled=${pref.isEnabled}, " +
+                                "disabled_at=${pref.disabledAt}"
+                    )
+                }
+
                 Result.success(updatedPreferences)
             } else {
-                Result.failure(Exception("Error al actualizar preferencias: ${response.code()} - ${response.message()}"))
+                val errorMsg = "Error al actualizar preferencias: ${response.code()} - ${response.message()}"
+                android.util.Log.e("NotifPrefRepo", "❌ $errorMsg")
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
-            android.util.Log.e("NotifRepo", "Excepción al actualizar preferencias", e)
+            android.util.Log.e("NotifPrefRepo", "❌ Excepción al actualizar preferencias", e)
             Result.failure(Exception("Error de red al actualizar preferencias: ${e.message}", e))
         }
     }
@@ -90,11 +125,20 @@ class NotificationPreferenceRepositoryImpl @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 val preferences = body.preferences?.map { it.toDomain() } ?: emptyList()
+
+                android.util.Log.d(
+                    "NotifPrefRepo",
+                    "🔄 Reset to defaults: ${preferences.size} preferencias"
+                )
+
                 Result.success(preferences)
             } else {
-                Result.failure(Exception("Error al resetear preferencias: ${response.message()}"))
+                val errorMsg = "Error al resetear preferencias: ${response.code()} - ${response.message()}"
+                android.util.Log.e("NotifPrefRepo", errorMsg)
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
+            android.util.Log.e("NotifPrefRepo", "❌ Error de red al resetear preferencias", e)
             Result.failure(Exception("Error de red al resetear preferencias: ${e.message}", e))
         }
     }

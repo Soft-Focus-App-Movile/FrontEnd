@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import java.time.LocalTime
 import javax.inject.Inject
 
@@ -43,7 +44,12 @@ class NotificationsViewModel @Inject constructor(
 
     private var currentFilter: DeliveryStatus? = null
     private var allNotifications = listOf<Notification>()
-    private var notificationsBeforeDisable = listOf<Notification>() // NUEVO: Guardar notificaciones antes de desactivar
+
+    // ✅ NUEVO: Guardar notificaciones antes de desactivar
+    private var notificationsBeforeDisable = listOf<Notification>()
+
+    // ✅ NUEVO: Timestamp de cuando se desactivaron las notificaciones
+    private var disabledTimestamp: LocalDateTime? = null
 
     init {
         loadNotifications()
@@ -75,6 +81,25 @@ class NotificationsViewModel @Inject constructor(
             println("   - Usuario: ${userType?.name}")
             println("   - Notificaciones activadas: $notificationsEnabled")
             println("   - Horario: ${schedule?.startTime} - ${schedule?.endTime}")
+            println("   - disabled_at del backend: ${masterPreference?.disabledAt}")
+
+            // ✅ PASO 1.5: Gestionar timestamp de desactivación
+            val backendDisabledAt = masterPreference?.disabledAt
+
+            // PRIORIDAD: Siempre usar el timestamp del backend si existe
+            if (backendDisabledAt != null && !notificationsEnabled) {
+                // Notificaciones desactivadas CON timestamp del backend
+                disabledTimestamp = backendDisabledAt
+                println("📡 [VIEWMODEL] Usando disabled_at del BACKEND: $disabledTimestamp")
+            } else if (notificationsEnabled) {
+                // Notificaciones activadas = limpiar timestamp
+                disabledTimestamp = null
+                println("🟢 [VIEWMODEL] Notificaciones ACTIVADAS - Limpiando timestamp")
+            } else {
+                // Fallback: desactivadas pero sin timestamp del backend (no debería pasar)
+                disabledTimestamp = LocalDateTime.now()
+                println("⚠️ [VIEWMODEL] FALLBACK - Usando timestamp local: $disabledTimestamp")
+            }
 
             // PASO 2: Cargar notificaciones
             val result = getNotificationsUseCase(
@@ -86,14 +111,29 @@ class NotificationsViewModel @Inject constructor(
                 onSuccess = { notifications ->
                     allNotifications = notifications
 
-                    // Si las notificaciones ESTÁN ACTIVADAS, guardar como "antes de desactivar"
+                    // ✅ Si las notificaciones ESTÁN ACTIVADAS, guardar como "antes de desactivar"
                     if (notificationsEnabled) {
                         notificationsBeforeDisable = notifications
                         println("💾 [VIEWMODEL] Guardadas ${notifications.size} notificaciones como backup")
                     } else {
-                        println("⚠️ [VIEWMODEL] Notificaciones desactivadas - Usando backup de ${notificationsBeforeDisable.size} notificaciones")
-                        // Si están desactivadas, usar las que teníamos antes
-                        allNotifications = notificationsBeforeDisable
+                        println("⚠️ [VIEWMODEL] Notificaciones desactivadas desde: $disabledTimestamp")
+
+                        // ✅ Si están desactivadas, filtrar solo las posteriores a disabled_at
+                        if (disabledTimestamp != null) {
+                            val newNotifications = notifications.filter { notif ->
+                                notif.createdAt.isAfter(disabledTimestamp)
+                            }
+
+                            println("📊 [VIEWMODEL] Notificaciones nuevas después de desactivar: ${newNotifications.size}")
+
+                            // Combinar notificaciones viejas + nuevas
+                            allNotifications = notificationsBeforeDisable + newNotifications
+                            println("📦 [VIEWMODEL] Total (backup + nuevas): ${allNotifications.size}")
+                        } else {
+                            // Fallback: usar backup si no hay timestamp
+                            allNotifications = notificationsBeforeDisable
+                            println("⚠️ [VIEWMODEL] Sin timestamp - Usando backup de ${notificationsBeforeDisable.size}")
+                        }
                     }
 
                     // PASO 3: Aplicar filtros según usuario y preferencias
@@ -199,7 +239,7 @@ class NotificationsViewModel @Inject constructor(
                         if (notification.id == notificationId) {
                             notification.copy(
                                 status = DeliveryStatus.READ,
-                                readAt = java.time.LocalDateTime.now()
+                                readAt = LocalDateTime.now()
                             )
                         } else {
                             notification
@@ -234,7 +274,7 @@ class NotificationsViewModel @Inject constructor(
                     allNotifications = allNotifications.map { notification ->
                         notification.copy(
                             status = DeliveryStatus.READ,
-                            readAt = notification.readAt ?: java.time.LocalDateTime.now()
+                            readAt = notification.readAt ?: LocalDateTime.now()
                         )
                     }
 
@@ -300,6 +340,13 @@ class NotificationsViewModel @Inject constructor(
             val notificationsEnabled = masterPreference?.isEnabled ?: true
             val schedule = masterPreference?.schedule
 
+            // ✅ Actualizar disabled_at desde el backend
+            val backendDisabledAt = masterPreference?.disabledAt
+            if (backendDisabledAt != null) {
+                disabledTimestamp = backendDisabledAt
+                println("📡 [VIEWMODEL] Refresh - disabled_at del backend: $disabledTimestamp")
+            }
+
             // Recargar notificaciones
             val result = notificationRepository.getNotifications(
                 userId = userId,
@@ -312,15 +359,25 @@ class NotificationsViewModel @Inject constructor(
                 onSuccess = { notifications ->
                     println("✅ [VIEWMODEL] Refresh exitoso: ${notifications.size} notificaciones")
 
-                    // Si las notificaciones ESTÁN ACTIVADAS, actualizar todo
+                    // ✅ Si las notificaciones ESTÁN ACTIVADAS, actualizar todo
                     if (notificationsEnabled) {
                         allNotifications = notifications
                         notificationsBeforeDisable = notifications
                         println("💾 [VIEWMODEL] Actualizado backup: ${notifications.size} notificaciones")
                     } else {
-                        println("⚠️ [VIEWMODEL] Notificaciones desactivadas - Manteniendo backup")
-                        // Si están desactivadas, mantener las antiguas
-                        allNotifications = notificationsBeforeDisable
+                        println("⚠️ [VIEWMODEL] Notificaciones desactivadas - Filtrando por timestamp")
+
+                        // ✅ Si están desactivadas, filtrar solo las nuevas
+                        if (disabledTimestamp != null) {
+                            val newNotifications = notifications.filter { notif ->
+                                notif.createdAt.isAfter(disabledTimestamp)
+                            }
+                            allNotifications = notificationsBeforeDisable + newNotifications
+                            println("📦 [VIEWMODEL] Total (backup + ${newNotifications.size} nuevas): ${allNotifications.size}")
+                        } else {
+                            allNotifications = notificationsBeforeDisable
+                            println("⚠️ [VIEWMODEL] Sin timestamp - Usando backup")
+                        }
                     }
 
                     _state.value = _state.value.copy(
