@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.graphics.BitmapFactory
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.softfocus.features.profile.presentation.ProfileViewModel
 import com.softfocus.ui.theme.*
@@ -378,8 +379,8 @@ fun EditPersonalInfoScreen(
                 label = "Descripción Profesional",
                 value = professionalBio,
                 onValueChange = { if (it.length <= 1000) professionalBio = it },
-                minLines = 8,
-                isExpandable = true
+                minLines = 3,
+                isExpandable = true,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -649,15 +650,16 @@ fun PsychologistEditableField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    minLines: Int = 1,
-    isExpandable: Boolean = false
+    minLines: Int = 5,
+    isExpandable: Boolean = true
 ) {
     Column(modifier = modifier) {
         Text(
             text = label,
             style = SourceSansRegular,
             fontSize = 16.sp,
-            color = Black
+            color = Black,
+            lineHeight = 20.sp,
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -666,6 +668,7 @@ fun PsychologistEditableField(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight(),
+
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedContainerColor = GreenEB2,

@@ -114,11 +114,11 @@ fun PsyChatProfileScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = summaryState.degree,
+                        text = summaryState.degree ?: "No especificado",
                         style = CrimsonSemiBold.copy(fontSize = 18.sp),
                     )
                     Text(
-                        text = summaryState.university,
+                        text = summaryState.university ?: "No especificado",
                         style = SourceSansSemiBold.copy(fontSize = 14.sp),
                         color = Color.Gray
                     )
@@ -128,7 +128,7 @@ fun PsyChatProfileScreen(
 
                 // Biografía
                 Text(
-                    text = summaryState.bio,
+                    text = summaryState.bio ?: "No especificado",
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                     color = Color.DarkGray,
@@ -152,11 +152,11 @@ fun PsyChatProfileScreen(
                         )
                         ContactRow(
                             icon = Icons.Default.Email,
-                            text = summaryState.email
+                            text = summaryState.email ?: "No especificado"
                         )
                         ContactRow(
                             icon = Icons.Default.Phone,
-                            text = summaryState.phoneNumber
+                            text = summaryState.phoneNumber ?: "No especificado"
                         )
                     }
                     Image(

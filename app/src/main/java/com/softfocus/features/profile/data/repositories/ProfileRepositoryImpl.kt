@@ -207,7 +207,7 @@ class ProfileRepositoryImpl @Inject constructor(
         paymentMethods: String?,
         isProfileVisibleInDirectory: Boolean?,
         allowsDirectMessages: Boolean?
-    ): Result<com.softfocus.features.profile.domain.models.PsychologistProfile> {
+    ): Result<Unit> {
         return try {
             android.util.Log.d("ProfileRepository", "updateProfessionalProfile called")
             val professionalData = mutableMapOf<String, Any?>()
@@ -229,8 +229,8 @@ class ProfileRepositoryImpl @Inject constructor(
             android.util.Log.d("ProfileRepository", "Response code: ${response.code()}, isSuccessful: ${response.isSuccessful}")
 
             if (response.isSuccessful && response.body() != null) {
-                val psychologistProfile = response.body()!!.toDomain()
-                Result.success(psychologistProfile)
+                android.util.Log.d("ProfileRepository", "Professional profile updated successfully")
+                Result.success(Unit)
             } else {
                 Result.failure(Exception("Error al actualizar perfil profesional: ${response.code()}"))
             }

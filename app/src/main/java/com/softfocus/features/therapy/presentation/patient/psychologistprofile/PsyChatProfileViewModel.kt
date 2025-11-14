@@ -23,11 +23,11 @@ data class PsychologistSummaryState(
     val isLoading: Boolean = true,
     val psychologistName: String = "Cargando...",
     val profilePhotoUrl: String = "",
-    val bio: String = "Soy $psychologistName",
-    val university: String = "Universidad",
-    val degree: String = "Título",
-    val email: String = " ",
-    val phoneNumber: String = " ",
+    val bio: String? = null,
+    val university: String? = null,
+    val degree: String? = null,
+    val email: String? = null,
+    val phoneNumber: String? = null,
     val specialties: List<String> = emptyList()
 )
 
@@ -92,12 +92,12 @@ class PsyChatProfileViewModel(
                     _summaryState.update {
                         it.copy(
                             psychologistName = psychologist.fullName,
-                            profilePhotoUrl = "${psychologist.profileImageUrl}",
-                            bio = "${psychologist.professionalBio}",
-                            university = "${psychologist.university}",
-                            degree = "${psychologist.degree}",
-                            email = "${psychologist.email}",
-                            phoneNumber = "${psychologist.phone}",
+                            profilePhotoUrl = psychologist.profileImageUrl ?: "",
+                            bio = psychologist.professionalBio,
+                            university = psychologist.university,
+                            degree = psychologist.degree,
+                            email = psychologist.email,
+                            phoneNumber = psychologist.phone,
                             specialties = psychologist.specialties
                         )
                     }

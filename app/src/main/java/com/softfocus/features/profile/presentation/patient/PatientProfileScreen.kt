@@ -362,11 +362,6 @@ fun PatientProfileScreen(
                 onClick = onNavigateToNotifications
             )
 
-            ProfileOptionDrawable(
-                iconRes = R.drawable.ic_subscription_plan,
-                title = "Mi plan",
-                onClick = onNavigateToMyPlan
-            )
 
             ProfileOptionDrawable(
                 iconRes = R.drawable.ic_policy_privacy,
