@@ -281,7 +281,7 @@ private fun PlanFeatureItem(text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.Top
     ) {
         Text(
@@ -296,6 +296,9 @@ private fun PlanFeatureItem(text: String) {
             style = SourceSansRegular,
             fontSize = 16.sp,
             color = White,
+            lineHeight = 20.sp,
+            softWrap = true,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Visible,
             modifier = Modifier.weight(1f)
         )
     }
