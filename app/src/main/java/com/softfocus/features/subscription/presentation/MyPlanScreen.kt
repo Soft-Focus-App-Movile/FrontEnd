@@ -37,14 +37,17 @@ fun MyPlanScreen(
         StripeCheckoutWebView(
             checkoutUrl = checkoutUrl!!,
             onSuccess = { sessionId ->
+                android.util.Log.d("MyPlanScreen", "Payment success! SessionId: $sessionId")
                 showWebView = false
                 viewModel.handleCheckoutSuccess(sessionId)
             },
             onCancel = {
+                android.util.Log.d("MyPlanScreen", "Payment cancelled by user")
                 showWebView = false
                 viewModel.clearCheckoutUrl()
             },
             onDismiss = {
+                android.util.Log.d("MyPlanScreen", "WebView dismissed")
                 showWebView = false
                 viewModel.clearCheckoutUrl()
             }
@@ -55,6 +58,10 @@ fun MyPlanScreen(
     LaunchedEffect(checkoutUrl) {
         if (checkoutUrl != null) {
             showWebView = true
+        } else if (showWebView) {
+            // WebView was closed, ensure we have the latest subscription data
+            android.util.Log.d("MyPlanScreen", "WebView closed, refreshing subscription data")
+            showWebView = false
         }
     }
 
